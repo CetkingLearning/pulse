@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pulse · Exam Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f3f1ec; --bg-2: #eae6dd; --ink: #1a2332; --ink-soft: #5b6577;
+      --card: #fffcf7; --line: #e4ddd0; --navy: #0b1f3a; --teal: #e25b12;
+      --teal-soft: #fde6d4; --amber: #c47b17; --amber-soft: #f8e6c8;
+      --coral: #c44536; --coral-soft: #f8d7d3;
+      --quant: #0b1f3a; --verbal: #6b4c9a; --logic: #e25b12;
+      --shadow: 0 1px 2px rgba(26,35,50,.04), 0 8px 24px rgba(26,35,50,.06);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: var(--bg); color: var(--ink); min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    header.app {
+      background: var(--navy); color: #fff;
+      padding: 10px 14px 0;
+      position: sticky; top: 0; z-index: 20;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .head-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .brand { display: flex; align-items: baseline; gap: 8px; }
+    .brand .mark { font-family: "IBM Plex Serif", serif; font-size: 20px; letter-spacing: -.02em; }
+    .brand .sub { font-size: 10px; opacity: .65; text-transform: uppercase; letter-spacing: .12em; }
+    nav.tabs {
+      display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding-bottom: 10px; margin: 0 -14px; padding-left: 14px; padding-right: 14px;
+    }
+    nav.tabs::-webkit-scrollbar { display: none; }
+    nav.tabs button {
+      background: transparent; border: 0; color: rgba(255,255,255,.72);
+      padding: 8px 12px; border-radius: 999px; cursor: pointer;
+      font: 600 13px/1 "IBM Plex Sans", sans-serif;
+      white-space: nowrap; flex: 0 0 auto;
+    }
+    nav.tabs button.active { background: rgba(255,255,255,.14); color: #fff; }
+    .student-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.08); padding: 4px 10px 4px 4px; border-radius: 999px; font-size: 12px;
+      max-width: 58%;
+    }
+    .student-chip div:last-child { overflow: hidden; }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex: 0 0 auto;
+      background: linear-gradient(135deg,#f0c27a,#c47b17);
+      display: grid; place-items: center; font-weight: 700; color: var(--navy); font-size: 11px;
+    }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 14px 14px 88px; }
+    .hero-row, .grid-2, .grid-3 { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .insight {
+      padding: 16px;
+      background: radial-gradient(900px 140px at 100% -20%, rgba(226,91,18,.12), transparent 50%), var(--card);
+    }
+    .insight .kicker { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 8px; }
+    .insight h2 { font-family: "IBM Plex Serif", serif; font-size: 20px; font-weight: 600; line-height: 1.3; margin-bottom: 8px; }
+    .insight p { color: var(--ink-soft); font-size: 14px; line-height: 1.5; }
+    .insight .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .btn { border: 0; border-radius: 9px; padding: 10px 12px; cursor: pointer; font: 600 13px/1 "IBM Plex Sans", sans-serif; }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-ghost { background: var(--bg-2); color: var(--ink); }
+    .target-card { padding: 16px; }
+    .target-card .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+    .pct { font-family: "IBM Plex Serif", serif; font-size: 40px; letter-spacing: -.03em; line-height: 1; margin: 6px 0 4px; }
+    .pct span { font-size: 18px; color: var(--ink-soft); }
+    .meta-row { display: flex; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--ink-soft); flex-wrap: wrap; }
+    .meta-row b { color: var(--ink); }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .kpi { padding: 12px; }
+    .kpi .name { font-size: 10px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .08em; }
+    .kpi .val { font-size: 20px; font-weight: 650; margin: 5px 0 2px; letter-spacing: -.02em; }
+    .kpi .delta { font-size: 11px; font-weight: 600; }
+    .up { color: var(--teal); } .down { color: var(--coral); } .flat { color: var(--ink-soft); }
+    .pane { padding: 14px; }
+    .pane h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .pane .hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; }
+    .chart-box { position: relative; height: 132px; }
+    .chart-box.sm { height: 110px; }
+    .table-scroll, .pane:has(table.clean) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.clean {
+      width: 100%;
+      min-width: 0;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    table.clean th {
+      text-align: left; font-size: 9px; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--ink-soft); font-weight: 600; padding: 4px 5px; border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    table.clean td { padding: 4px 5px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+    table.clean tr:last-child td { border-bottom: 0; }
+    /* Drop secondary columns so the table fits a phone without a huge swipe. */
+    #vaultTable th:nth-child(2), #vaultTable td:nth-child(2),
+    #vaultTable th:nth-child(4), #vaultTable td:nth-child(4),
+    #vaultTable th:nth-child(9), #vaultTable td:nth-child(9),
+    #vaultTable th:nth-child(10), #vaultTable td:nth-child(10),
+    #vaultTable th:nth-child(11), #vaultTable td:nth-child(11),
+    #leakTable th:nth-child(1), #leakTable td:nth-child(1),
+    #leakTable th:nth-child(5), #leakTable td:nth-child(5),
+    #repeatTable th:nth-child(5), #repeatTable td:nth-child(5) { display: none; }
+    .pill { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 9px; font-weight: 600; }
+    .easy { background: #fde6d4; color: #9a3d08; }
+    .med { background: var(--amber-soft); color: #8a560c; }
+    .hard { background: var(--coral-soft); color: #8d2e24; }
+    .slip { background: var(--amber-soft); color: #8a560c; }
+    .concept { background: var(--coral-soft); color: #8d2e24; }
+    .select { background: #e8e0f4; color: #4d3278; }
+    .timep { background: #d6e0ee; color: #0b1f3a; }
+    .swot { display: grid; gap: 8px; }
+    .swot-item {
+      display: grid; grid-template-columns: 88px 1fr; gap: 10px; align-items: start;
+      padding: 10px 12px; border-radius: 10px; background: var(--bg);
+    }
+    .swot-item b { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .S { color: var(--teal); } .W { color: var(--coral); } .O { color: var(--amber); } .T { color: var(--navy); }
+    .section-card { padding: 16px; }
+    .section-card .top { display: flex; justify-content: space-between; align-items: baseline; }
+    .section-card h4 { font-size: 15px; }
+    .big-acc { font-family: "IBM Plex Serif", serif; font-size: 28px; }
+    .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; font-size: 12px; color: var(--ink-soft); }
+    .mini-stats b { display: block; color: var(--ink); font-size: 14px; }
+    .view { display: none; } .view.active { display: block; }
+    .footnote { margin-top: 18px; font-size: 12px; color: var(--ink-soft); }
+    .legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; flex-wrap: wrap; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .callout { background: var(--amber-soft); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; margin-top: 12px; }
+    .page-q { font-size: 13px; color: var(--ink-soft); margin: -6px 0 16px; }
+    .page-q b { color: var(--ink); font-weight: 600; }
+    .sb-bar {
+      background: #071628; color: #d7e0ea; padding: 8px 14px;
+      display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; font-size: 12px;
+    }
+    .sb-bar label { opacity: .7; letter-spacing: .08em; text-transform: uppercase; font-size: 10px; }
+    .sb-bar input {
+      background: #0f1c2a; border: 1px solid #2c445c; color: #fff; width: 100%;
+      border-radius: 8px; padding: 9px 10px; font: 13px/1 "IBM Plex Sans", sans-serif; min-width: 0;
+    }
+    .sb-actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .sb-bar .status { opacity: .75; flex: 1 1 140px; }
+    .sb-bar .status.ok { color: #8ee0d2; }
+    .sb-bar .status.err { color: #f0a8a0; }
+    a.sys { color: var(--navy); font-weight: 600; text-decoration: none; border-bottom: 1px dotted var(--line); }
+    a.sys:hover { color: var(--teal); }
+    @media (min-width: 640px) {
+      .kpis { grid-template-columns: repeat(3, 1fr); }
+      .chart-box { height: 180px; }
+      .chart-box.sm { height: 150px; }
+      .pct { font-size: 44px; }
+      table.clean { font-size: 11px; }
+      table.clean th, table.clean td { padding: 6px 7px; }
+    }
+    @media (min-width: 900px) {
+      header.app { flex-direction: row; align-items: center; padding: 12px 22px; gap: 18px; }
+      nav.tabs { margin: 0; padding: 0; flex: 1; overflow: visible; }
+      .wrap { padding: 22px 22px 60px; }
+      .hero-row { grid-template-columns: 1.4fr .9fr; gap: 16px; }
+      .grid-2 { grid-template-columns: 1.35fr 1fr; gap: 16px; }
+      .grid-3 { grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+      .kpis { grid-template-columns: repeat(6, 1fr); gap: 12px; }
+      .insight { padding: 22px 24px; }
+      .insight h2 { font-size: 22px; }
+      .chart-box { height: 260px; }
+      .chart-box.sm { height: 210px; }
+      table.clean { min-width: 0; font-size: 13px; }
+      table.clean th { font-size: 11px; padding: 8px; }
+      table.clean td { padding: 9px 8px; }
+      .pill { font-size: 11px; padding: 2px 8px; }
+      #vaultTable th:nth-child(2), #vaultTable td:nth-child(2),
+      #vaultTable th:nth-child(4), #vaultTable td:nth-child(4),
+      #vaultTable th:nth-child(9), #vaultTable td:nth-child(9),
+      #vaultTable th:nth-child(10), #vaultTable td:nth-child(10),
+      #vaultTable th:nth-child(11), #vaultTable td:nth-child(11),
+      #leakTable th:nth-child(1), #leakTable td:nth-child(1),
+      #leakTable th:nth-child(5), #leakTable td:nth-child(5),
+      #repeatTable th:nth-child(5), #repeatTable td:nth-child(5) { display: table-cell; }
+      .table-scroll, .pane:has(table.clean) { margin: 0; padding: 0; overflow: visible; }
+      .sb-bar { display: flex; padding: 8px 22px; }
+      .sb-bar input { min-width: 240px; width: auto; }
+      .sb-actions { display: contents; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app">
+    <div class="head-top">
+      <div class="brand">
+        <div class="mark">Pulse</div>
+        <div class="sub">Analytics</div>
+      </div>
+      <div class="student-chip">
+        <div class="avatar" id="avatar">AM</div>
+        <div>
+          <div style="font-weight:600" id="studentName">Aarav Mehta</div>
+          <div style="opacity:.7;font-size:11px" id="studentMeta">Target exam · 71 days out</div>
+        </div>
+      </div>
+    </div>
+    <nav class="tabs" id="pulseTabs">
+      <button class="active" type="button" data-tab="summary">Summary</button>
+      <button type="button" data-tab="progress">Progress</button>
+      <button type="button" data-tab="benchmark">Benchmark</button>
+      <button type="button" data-tab="strategy">Strategy</button>
+      <button type="button" data-tab="mistakes">Mistakes</button>
+      <button type="button" data-tab="change">Change</button>
+    </nav>
+  </header>
+  <div class="sb-bar">
+    <label>SB</label>
+    <input id="sbKey" placeholder="student id or sb link" />
+    <div class="sb-actions">
+      <button class="btn btn-teal" id="sbLoad" type="button">Load</button>
+      <button class="btn btn-ghost" id="sbDemo" type="button" style="background:#0b1f3a;color:#fff">Demo</button>
+      <span class="status" id="sbStatus">Not connected · sample</span>
+      <a class="sys" id="sbOpen" href="#" target="_blank" rel="noopener" style="color:#8ee0d2">Open SB →</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- 1 SUMMARY -->
+    <section id="summary" class="view active">
+      <p class="page-q">Where do I stand, right now?</p>
+      <div class="hero-row">
+        <div class="card insight">
+          <div class="kicker">One bottleneck · last 8 mocks</div>
+          <h2>You are accurate enough to clear a high target. Verbal selection — not Quant — is the ceiling.</h2>
+          <p>
+            Accuracy is 72% and rising. Time per correct answer dropped from 3.4 min to 2.6 min.
+            The leak is Verbal: you attempt only 67% of questions and spend too long on items you still get wrong.
+            Fixing selection in Verbal is worth more marks this month than grinding extra Quant.
+          </p>
+          <div class="actions">
+            <button class="btn btn-teal" data-tab-jump="change">What to change next test</button>
+            <button class="btn btn-ghost" data-tab-jump="strategy">Open strategy</button>
+          </div>
+        </div>
+        <div class="card target-card">
+          <div class="label">Predicted standing</div>
+          <div class="pct">94.6<span> band</span></div>
+          <div class="meta-row">
+            <span>Latest mock <b>91.8</b></span>
+            <span>Best <b>96.1</b></span>
+            <span>Target <b>99.0</b></span>
+          </div>
+          <div class="callout">Gap to target ≈ +18–22 raw marks. Fastest path: +6 Verbal attempts at ≥75% accuracy, and cut time-on-wrong in Logic.</div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="card kpi"><div class="name">Mocks taken</div><div class="val">12</div><div class="delta up">+3 this month</div></div>
+        <div class="card kpi"><div class="name">Net (latest)</div><div class="val">86</div><div class="delta up">+9 vs 4-mock avg</div></div>
+        <div class="card kpi"><div class="name">Accuracy</div><div class="val">72%</div><div class="delta up">+4.1 pp</div></div>
+        <div class="card kpi"><div class="name">Attempt rate</div><div class="val">74%</div><div class="delta down">Verbal 67%</div></div>
+        <div class="card kpi"><div class="name">Min / correct</div><div class="val">2.61</div><div class="delta up">−0.42 vs first 4</div></div>
+        <div class="card kpi"><div class="name">Consistency</div><div class="val">B+</div><div class="delta flat">σ = 7.4 marks</div></div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card section-card" style="border-top: 3px solid var(--quant)">
+          <div class="top"><h4>Quant</h4><span class="big-acc">78%</span></div>
+          <div class="mini-stats">
+            <div><b>16 / 22</b>attempted</div>
+            <div><b>2.4 min</b>per correct</div>
+            <div><b>+4.2</b>marks / mock trend</div>
+            <div><b>Hold</b>Arithmetic, Algebra</div>
+          </div>
+          <p class="hint">High accuracy, conservative attempts. You can add 2 easy items per mock.</p>
+        </div>
+        <div class="card section-card" style="border-top: 3px solid var(--verbal)">
+          <div class="top"><h4>Verbal</h4><span class="big-acc">64%</span></div>
+          <div class="mini-stats">
+            <div><b>16 / 24</b>attempted</div>
+            <div><b>3.1 min</b>per correct</div>
+            <div><b>−1.1</b>marks / mock trend</div>
+            <div><b>Ceiling</b>Inference, arrangement</div>
+          </div>
+          <p class="hint">Primary bottleneck. Wrong answers cost too much time. Selection is the unlock.</p>
+        </div>
+        <div class="card section-card" style="border-top: 3px solid var(--logic)">
+          <div class="top"><h4>Logic</h4><span class="big-acc">75%</span></div>
+          <div class="mini-stats">
+            <div><b>14 / 20</b>attempted</div>
+            <div><b>2.5 min</b>per correct</div>
+            <div><b>+2.0</b>marks / mock trend</div>
+            <div><b>Watch</b>Set selection</div>
+          </div>
+          <p class="hint">Good conversion once a set is chosen. Time is lost on abandoned sets.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card pane">
+          <h3>Where marks go · last 8 mocks (avg)</h3>
+          <p class="hint">Available → attempted → correct / wrong / left. Unattempted is not failure.</p>
+          <div class="chart-box sm"><canvas id="funnelChart"></canvas></div>
+        </div>
+        <div class="card pane">
+          <h3>Live read</h3>
+          <p class="hint">From time × accuracy × difficulty — not from “highest section score.”</p>
+          <div class="swot">
+            <div class="swot-item"><b class="S">Hold</b><span>Quant easy/medium — 91% accuracy at 1.8 min. Bank these first every mock.</span></div>
+            <div class="swot-item"><b class="W">Fix</b><span>Verbal inference — 48% accuracy, 3.6 min. You stay too long and still miss.</span></div>
+            <div class="swot-item"><b class="O">Take</b><span>Easy Logic sets you skip. 90-second take-or-leave rule.</span></div>
+            <div class="swot-item"><b class="T">Stop</b><span>Guessing in Verbal short questions. 37% of those attempts are wrong.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 PROGRESS -->
+    <section id="progress" class="view">
+      <p class="page-q">Am I actually improving?</p>
+      <div class="card pane" style="margin-bottom:16px">
+        <h3>Score across mocks</h3>
+        <p class="hint">Raw net vs difficulty-adjusted net. Use the adjusted line when an easy mock looks like a breakthrough.</p>
+        <div class="legend">
+          <span><i class="dot" style="background:#0b1f3a"></i>Net score</span>
+          <span><i class="dot" style="background:#e25b12"></i>Adjusted score</span>
+          <span><i class="dot" style="background:#c47b17"></i>Standing (right)</span>
+        </div>
+        <div class="chart-box"><canvas id="trajChart"></canvas></div>
+      </div>
+      <div class="grid-2">
+        <div class="card pane">
+          <h3>Accuracy vs attempt rate</h3>
+          <p class="hint">Healthy pattern: attempt 70–80% with accuracy ≥75%. You are below the accuracy line in Verbal only.</p>
+          <div class="chart-box"><canvas id="accAttChart"></canvas></div>
+        </div>
+        <div class="card pane">
+          <h3>What moved the score</h3>
+          <p class="hint">Marks gained vs your first four mocks — by lever, not by vibe.</p>
+          <div class="chart-box"><canvas id="decompChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card pane">
+        <h3>Mock log</h3>
+        <p class="hint">Sort mentally by efficiency when score and difficulty disagree.</p>
+        <table class="clean" id="vaultTable">
+          <thead>
+            <tr>
+              <th>Mock</th><th>Date</th><th>Diff</th><th>Time</th><th>Att</th><th>C / W</th><th>Acc</th><th>Net</th><th>Standing</th><th>Min/C</th><th>Eff</th><th>SB</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3 BENCHMARK -->
+    <section id="benchmark" class="view">
+      <p class="page-q">How far am I from the target?</p>
+      <div class="kpis">
+        <div class="card kpi"><div class="name">Target standing</div><div class="val">99.0</div><div class="delta flat">you set this</div></div>
+        <div class="card kpi"><div class="name">Predicted</div><div class="val">94.6</div><div class="delta up">rising</div></div>
+        <div class="card kpi"><div class="name">Marks to close</div><div class="val">+20</div><div class="delta flat">raw, mid estimate</div></div>
+        <div class="card kpi"><div class="name">Section floors</div><div class="val">2 / 3</div><div class="delta down">Verbal short</div></div>
+        <div class="card kpi"><div class="name">Vs last 4 avg</div><div class="val">+9</div><div class="delta up">net marks</div></div>
+        <div class="card kpi"><div class="name">Ready signal</div><div class="val">Not yet</div><div class="delta flat">easy-mock bias</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card pane">
+          <h3>You vs a healthy band</h3>
+          <p class="hint">A standard to reach — not a ranking against the room.</p>
+          <div class="chart-box"><canvas id="benchChart"></canvas></div>
+        </div>
+        <div class="card pane">
+          <h3>Section cockpit vs band</h3>
+          <table class="clean">
+            <thead>
+              <tr><th>Metric</th><th>Quant</th><th>Verbal</th><th>Logic</th><th>Healthy</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Attempt rate</td><td>73%</td><td>67%</td><td>70%</td><td>70–80%</td></tr>
+              <tr><td>Accuracy</td><td>78%</td><td>64%</td><td>75%</td><td>≥75%</td></tr>
+              <tr><td>Net / mock (last 4)</td><td>34</td><td>22</td><td>28</td><td>—</td></tr>
+              <tr><td>Min / correct</td><td>2.4</td><td>3.1</td><td>2.5</td><td>≤2.6</td></tr>
+              <tr><td>Negatives / mock</td><td>3.5</td><td>5.8</td><td>3.5</td><td>≤4</td></tr>
+              <tr><td>Diff-adjusted acc</td><td>81%</td><td>61%</td><td>73%</td><td>—</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">Verbal is the only section outside the healthy band on both attempt and accuracy. That is the gap, not “work harder everywhere.”</div>
+        </div>
+      </div>
+      <div class="card pane">
+        <h3>Minutes per correct vs benchmark</h3>
+        <p class="hint">Your cost of one correct mark. Verbal is 29% more expensive than Quant.</p>
+        <div class="chart-box sm"><canvas id="mpcChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 4 STRATEGY -->
+    <section id="strategy" class="view">
+      <p class="page-q">Attempt more, or protect accuracy?</p>
+      <div class="kpis">
+        <div class="card kpi"><div class="name">Time / question</div><div class="val">1.82m</div><div class="delta flat">vs ideal 1.76m</div></div>
+        <div class="card kpi"><div class="name">Time / correct</div><div class="val">2.61m</div><div class="delta up">improving</div></div>
+        <div class="card kpi"><div class="name">Time / wrong</div><div class="val">2.05m</div><div class="delta down">still too high</div></div>
+        <div class="card kpi"><div class="name">Sunk on skips</div><div class="val">9.4m</div><div class="delta flat">per mock</div></div>
+        <div class="card kpi"><div class="name">Pacing</div><div class="val">71</div><div class="delta flat">/ 100</div></div>
+        <div class="card kpi"><div class="name">Marks / minute</div><div class="val">1.18</div><div class="delta up">efficiency</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card pane">
+          <h3>Time–accuracy map</h3>
+          <p class="hint">Each bubble is a mock. Size = difficulty. Upper-left is elite: fast and accurate.</p>
+          <div class="chart-box"><canvas id="scatterChart"></canvas></div>
+        </div>
+        <div class="card pane">
+          <h3>Section shape</h3>
+          <p class="hint">Accuracy, attempt, time, consistency, adjusted accuracy, selection.</p>
+          <div class="chart-box"><canvas id="balanceChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card pane">
+        <h3>Time leak register · latest 3 mocks</h3>
+        <p class="hint">Minutes spent where marks did not come back.</p>
+        <table class="clean" id="leakTable">
+          </thead>
+          <tbody>
+            <tr><td>P12</td><td>Verbal</td><td>Passage 3</td><td>7.8 min</td><td>1C 1W</td><td>Stay-too-long</td><td>Hard cap 6 min / passage</td></tr>
+            <tr><td>P12</td><td>Logic</td><td>Set B</td><td>8.1 min</td><td>Left</td><td>Bad selection</td><td>90s take / leave</td></tr>
+            <tr><td>P11</td><td>Quant</td><td>Hard TITA</td><td>5.4 min</td><td>Wrong</td><td>Ego-solve</td><td>Leave at 3 min if no setup</td></tr>
+            <tr><td>P11</td><td>Verbal</td><td>Short Q</td><td>4.2 min</td><td>Wrong</td><td>Low-yield</td><td>2 min max; last in section</td></tr>
+            <tr><td>P10</td><td>Logic</td><td>Set C</td><td>6.6 min</td><td>2C 2W</td><td>Partial set</td><td>Finish a set or leave it</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">Do not raise attempt rate if accuracy falls below 70%. Add attempts only in the section that is already accurate (Quant easy items).</div>
+      </div>
+    </section>
+
+    <!-- 5 MISTAKES -->
+    <section id="mistakes" class="view">
+      <p class="page-q">Careless, or a concept gap?</p>
+      <div class="kpis">
+        <div class="card kpi"><div class="name">Wrongs / mock</div><div class="val">14</div><div class="delta up">−2 vs first 4</div></div>
+        <div class="card kpi"><div class="name">Slips</div><div class="val">31%</div><div class="delta flat">read / calc</div></div>
+        <div class="card kpi"><div class="name">Concept</div><div class="val">27%</div><div class="delta down">inference</div></div>
+        <div class="card kpi"><div class="name">Time pressure</div><div class="val">22%</div><div class="delta flat">last 8 min</div></div>
+        <div class="card kpi"><div class="name">Bad selection</div><div class="val">20%</div><div class="delta down">Logic sets</div></div>
+        <div class="card kpi"><div class="name">Repeat streak</div><div class="val">5</div><div class="delta down">same RC error</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card pane">
+          <h3>Mistake mix · last 8 mocks</h3>
+          <p class="hint">Each type needs a different fix. Mixing them into “I am bad at Verbal” wastes a week.</p>
+          <div class="chart-box"><canvas id="mistakeChart"></canvas></div>
+        </div>
+        <div class="card pane">
+          <h3>Accuracy by difficulty</h3>
+          <p class="hint">Easy items you miss are slips. Hard items you slowly get right are optional.</p>
+          <div class="chart-box"><canvas id="diffChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card pane">
+        <h3>Repeat log</h3>
+        <p class="hint">Same miss, more than twice. This is the list Change should read.</p>
+        <table class="clean" id="repeatTable">
+          </thead>
+          <tbody>
+            <tr><td>Inference treated as fact</td><td>Verbal</td><td><span class="pill concept">Concept</span></td><td>5</td><td>P12</td><td>2 timed inference sets / week</td></tr>
+            <tr><td>Misread “except” / “least”</td><td>Verbal</td><td><span class="pill slip">Slip</span></td><td>4</td><td>P11</td><td>Underline qualifier before options</td></tr>
+            <tr><td>Open third Logic set</td><td>Logic</td><td><span class="pill select">Selection</span></td><td>4</td><td>P12</td><td>Two-set lock</td></tr>
+            <tr><td>Arithmetic sign error</td><td>Quant</td><td><span class="pill slip">Slip</span></td><td>3</td><td>P10</td><td>5-second sign check</td></tr>
+            <tr><td>Rushed last 4 Quant</td><td>Quant</td><td><span class="pill timep">Time</span></td><td>3</td><td>P11</td><td>Leave 4 min buffer</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6 CHANGE -->
+    <section id="change" class="view">
+      <p class="page-q">What do I do differently in the next test?</p>
+      <div class="hero-row">
+        <div class="card insight">
+          <div class="kicker">Next test · generated 13 Sep 2026</div>
+          <h2>Do not add more mocks until Verbal selection rules are drilled.</h2>
+          <p>Two full mocks in 14 days is enough. The rest of the hours go to timed inference sets and Logic take-or-leave drills. More mocks without a new selection rule will reproduce the same 91–95 band.</p>
+        </div>
+        <div class="card pane">
+          <h3>Load for 14 days</h3>
+          <table class="clean">
+            <tbody>
+              <tr><td>Full mocks</td><td>2</td></tr>
+              <tr><td>Verbal timed sets</td><td>6 × 40 min</td></tr>
+              <tr><td>Logic take-or-leave</td><td>4 × 30 min</td></tr>
+              <tr><td>Quant easy-first sprints</td><td>3 × 25 min</td></tr>
+              <tr><td>Mistake log review</td><td>20 min after each session</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:16px">
+        <div class="card pane">
+          <h3>New rules</h3>
+          <p class="hint">Habits beat extra content this close to the exam.</p>
+          <ol style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+            <li>Verbal: 6-minute hard cap per passage.</li>
+            <li>Short Verbal: attempt only if two options die in 90 seconds.</li>
+            <li>Logic: 90-second take-or-leave. Never a third open set.</li>
+            <li>Quant: easy items first. Hard geometry after minute 25.</li>
+            <li>Any unsolved item at 3 min → mark and leave.</li>
+          </ol>
+        </div>
+        <div class="card pane">
+          <h3>Success criteria by next mock</h3>
+          <table class="clean">
+            <tbody>
+              <tr><td>Verbal attempt rate</td><td>67% → 75%</td></tr>
+              <tr><td>Verbal accuracy</td><td>64% → 72%</td></tr>
+              <tr><td>Time / wrong</td><td>2.05 → 1.6 min</td></tr>
+              <tr><td>Sunk time on skips</td><td>9.4 → 5 min</td></tr>
+              <tr><td>Net score band</td><td>86 → 100–108</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card pane">
+          <h3>Do not</h3>
+          <p class="hint">Common stall at this standing.</p>
+          <ul style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+            <li>Do not chase hard Quant to feel prepared.</li>
+            <li>Do not take four mocks a week.</li>
+            <li>Do not read solutions before tagging the mistake type.</li>
+            <li>Do not raise attempts if accuracy falls under 70%.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card pane" style="margin-top:16px">
+        <h3>Marks you can buy next</h3>
+        <table class="clean">
+          <thead><tr><th>Move</th><th>Expected Δ</th><th>Effort</th></tr></thead>
+          <tbody>
+            <tr><td>Verbal: +3 high-confidence passage attempts</td><td>+7 to +9</td><td>Med</td></tr>
+            <tr><td>Stop two blind short-Verbal guesses</td><td>+2</td><td>Low</td></tr>
+            <tr><td>Logic: abort bad sets by 90s</td><td>+4 to +6</td><td>Med</td></tr>
+            <tr><td>Quant: add 2 easy items</td><td>+5 to +6</td><td>Low</td></tr>
+            <tr><td>Cap ego-solves at 3 min</td><td>+3</td><td>Habit</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
+  document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
+}
+document.getElementById("pulseTabs").addEventListener("click", function (e) {
+  const btn = e.target.closest("button[data-tab]");
+  if (btn) showTab(btn.dataset.tab);
+});
+document.addEventListener("click", function (e) {
+  const jump = e.target.closest("[data-tab-jump]");
+  if (jump) showTab(jump.getAttribute("data-tab-jump"));
+});
+
+/* Point this at the live student-backend. Override anytime with ?sb_base= */
+let SB_BASE = "https://sb.cetking.in";
+try {
+  SB_BASE = new URLSearchParams(location.search).get("sb_base")
+    || localStorage.getItem("pulse_sb_base")
+    || SB_BASE;
+} catch (e) {}
+
+const DEMO_MOCKS = [
+  { id:"P05", date:"2026-06-08", diff:"E", mins:118, q:66, att:46, c:30, w:16, net:74, pct:86.2, mpc:3.93, acc:65.2 },
+  { id:"P06", date:"2026-06-22", diff:"M", mins:120, q:66, att:48, c:32, w:16, net:80, pct:88.4, mpc:3.75, acc:66.7 },
+  { id:"P07", date:"2026-07-06", diff:"H", mins:120, q:66, att:44, c:31, w:13, net:80, pct:91.0, mpc:3.87, acc:70.5 },
+  { id:"P08", date:"2026-07-20", diff:"M", mins:119, q:66, att:49, c:34, w:15, net:87, pct:92.1, mpc:3.50, acc:69.4 },
+  { id:"P09", date:"2026-08-03", diff:"M", mins:120, q:66, att:50, c:35, w:15, net:90, pct:93.0, mpc:3.43, acc:70.0 },
+  { id:"P10", date:"2026-08-17", diff:"H", mins:120, q:66, att:47, c:34, w:13, net:89, pct:94.4, mpc:3.53, acc:72.3 },
+  { id:"P11", date:"2026-08-31", diff:"E", mins:116, q:66, att:52, c:38, w:14, net:100, pct:96.1, mpc:3.05, acc:73.1 },
+  { id:"P12", date:"2026-09-10", diff:"M", mins:120, q:66, att:49, c:36, w:13, net:95, pct:91.8, mpc:3.33, acc:73.5 }
+];
+
+let MOCKS = DEMO_MOCKS.slice();
+let CURRENT_SB = null;
+
+const navy = "#0b1f3a", teal = "#e25b12", amber = "#c47b17", coral = "#c44536", quant="#0b1f3a", verbal="#6b4c9a", logic="#e25b12";
+
+const tickSize = window.matchMedia("(max-width: 899px)").matches ? 8 : 11;
+const legendSize = window.matchMedia("(max-width: 899px)").matches ? 9 : 11;
+
+function baseOpts() {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: "#5b6577", font: { size: tickSize }, maxRotation: 0, autoSkip: true } },
+      y: { grid: { color: "#eee8dc" }, ticks: { color: "#5b6577", font: { size: tickSize } } }
+    }
+  };
+}
+
+function draw(id, spec) {
+  const el = document.getElementById(id);
+  if (!el || typeof Chart === "undefined") return;
+  try { new Chart(el, spec); } catch (e) {}
+}
+
+draw("funnelChart", {
+  type: "bar",
+  data: {
+    labels: ["Available", "Attempted", "Correct", "Wrong", "Left"],
+    datasets: [{ data: [66, 49, 35, 14, 17], backgroundColor: [navy, navy, teal, coral, amber] }]
+  },
+  options: baseOpts()
+});
+
+draw("trajChart", {
+  type: "line",
+  data: {
+    labels: MOCKS.map(m => m.id),
+    datasets: [
+      { label: "Net", data: MOCKS.map(m => m.net), borderColor: navy, backgroundColor: "rgba(11,31,58,.08)", fill: true, tension: .35, pointRadius: 4 },
+      { label: "Adj", data: [70,78,86,85,88,95,92,93], borderColor: teal, borderDash: [5,4], tension: .35, pointRadius: 3 },
+      { label: "Standing", data: MOCKS.map(m => m.pct), borderColor: amber, yAxisID: "y1", tension: .35, pointRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: "#5b6577", font:{size:legendSize} } },
+      y: { grid: { color: "#eee8dc" }, ticks: { color: "#5b6577" } },
+      y1: { position: "right", grid: { display: false }, min: 80, max: 100, ticks: { color: amber } }
+    }
+  }
+});
+
+draw("accAttChart", {
+  type: "line",
+  data: {
+    labels: MOCKS.map(m => m.id),
+    datasets: [
+      { label: "Accuracy %", data: MOCKS.map(m => m.acc), borderColor: teal, tension: .3 },
+      { label: "Attempt %", data: MOCKS.map(m => +(m.att/m.q*100).toFixed(1)), borderColor: amber, tension: .3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { boxWidth: 12, font:{size:legendSize} } } },
+    scales: { x: { grid:{display:false} }, y: { min: 55, max: 85, grid:{ color:"#eee8dc"} } }
+  }
+});
+
+draw("decompChart", {
+  type: "bar",
+  data: {
+    labels: ["More attempts", "Higher accuracy", "Fewer negatives", "Better selection", "Time saved"],
+    datasets: [{ data: [4, 6, 3, 5, 2], backgroundColor: [quant, teal, amber, verbal, navy] }]
+  },
+  options: { ...baseOpts(), indexAxis: "y" }
+});
+
+draw("benchChart", {
+  type: "radar",
+  data: {
+    labels: ["Accuracy", "Attempt rate", "Time efficiency", "Consistency", "Diff-adj acc", "Selection"],
+    datasets: [
+      { label: "You", data: [72, 74, 71, 76, 70, 68], borderColor: navy, backgroundColor: "rgba(11,31,58,.18)" },
+      { label: "Target band", data: [80, 76, 82, 80, 80, 80], borderColor: teal, backgroundColor: "rgba(226,91,18,.08)", borderDash: [5,4] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: legendSize } } } },
+    scales: { r: { min: 40, max: 100, ticks: { display: false }, grid: { color: "#eee8dc" }, pointLabels: { font: { size: tickSize } } } }
+  }
+});
+
+draw("mpcChart", {
+  type: "bar",
+  data: {
+    labels: ["Quant", "Verbal", "Logic"],
+    datasets: [
+      { label: "You", data: [2.4, 3.1, 2.5], backgroundColor: [quant, verbal, logic] },
+      { label: "Target band", data: [2.0, 2.4, 2.2], backgroundColor: "rgba(11,31,58,.18)" }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { boxWidth: 12, font:{size:legendSize} } } },
+    scales: { x: { grid:{display:false} }, y: { grid:{color:"#eee8dc"} } }
+  }
+});
+
+draw("scatterChart", {
+  type: "scatter",
+  data: {
+    datasets: [{
+      label: "Mocks",
+      data: MOCKS.map(m => ({ x: m.mpc, y: m.acc, r: m.diff==="H"?14:m.diff==="M"?10:7 })),
+      backgroundColor: MOCKS.map(m => m.diff==="H"?coral:m.diff==="M"?amber:teal)
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { title: { display: true, text: "Minutes per correct" }, min: 2.8, max: 4.2, grid:{color:"#eee8dc"} },
+      y: { title: { display: true, text: "Accuracy %" }, min: 62, max: 76, grid:{color:"#eee8dc"} }
+    }
+  }
+});
+
+draw("balanceChart", {
+  type: "radar",
+  data: {
+    labels: ["Accuracy", "Attempt rate", "Time efficiency", "Consistency", "Diff-adj acc", "Selection"],
+    datasets: [
+      { label: "Quant", data: [78,73,82,80,81,84], borderColor: quant, backgroundColor: "rgba(11,31,58,.18)" },
+      { label: "Verbal", data: [64,67,58,62,61,55], borderColor: verbal, backgroundColor: "rgba(107,76,154,.15)" },
+      { label: "Logic", data: [75,70,76,70,73,72], borderColor: logic, backgroundColor: "rgba(226,91,18,.12)" }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { boxWidth: 10, font: { size: legendSize } } } },
+    scales: { r: { min: 40, max: 100, ticks: { display: false }, grid: { color: "#eee8dc" }, pointLabels: { font: { size: tickSize } } } }
+  }
+});
+
+draw("mistakeChart", {
+  type: "doughnut",
+  data: {
+    labels: ["Slip", "Concept", "Time pressure", "Bad selection"],
+    datasets: [{ data: [31, 27, 22, 20], backgroundColor: [amber, coral, navy, verbal] }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, position: window.matchMedia("(max-width: 899px)").matches ? "bottom" : "right", labels: { boxWidth: 10, font: { size: legendSize } } } }
+  }
+});
+
+draw("diffChart", {
+  type: "bar",
+  data: {
+    labels: ["Easy", "Medium", "Hard"],
+    datasets: [
+      { label: "Quant", data: [91, 76, 54], backgroundColor: quant },
+      { label: "Verbal", data: [78, 62, 41], backgroundColor: verbal },
+      { label: "Logic", data: [88, 74, 49], backgroundColor: logic }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { boxWidth: 12, font:{size:legendSize} } } },
+    scales: { x: { grid:{display:false} }, y: { max: 100, grid:{color:"#eee8dc"} } }
+  }
+});
+
+function sbMockUrl(id) {
+  return `${SB_BASE.replace(/\/$/,"")}/report/${encodeURIComponent(id)}`;
+}
+
+function fillVault(rows) {
+  const tb = document.querySelector("#vaultTable tbody");
+  tb.innerHTML = "";
+  rows.slice().reverse().forEach(m => {
+    const acc = Number(m.acc).toFixed(0);
+    const att = ((m.att/m.q)*100).toFixed(0);
+    const eff = (m.net / m.mins).toFixed(2);
+    const pill = m.diff==="E"?"easy":m.diff==="M"?"med":"hard";
+    const label = m.diff==="E"?"Easy":m.diff==="M"?"Med":"Hard";
+    const href = m.sb_url || sbMockUrl(m.id);
+    tb.insertAdjacentHTML("beforeend", `<tr>
+      <td><b>${m.id}</b></td><td>${m.date}</td>
+      <td><span class="pill ${pill}">${label}</span></td>
+      <td>${m.mins}m</td><td>${m.att}/${m.q} (${att}%)</td>
+      <td>${m.c} / ${m.w}</td><td>${acc}%</td>
+      <td><b>${m.net}</b></td><td>${m.pct}</td>
+      <td>${Number(m.mpc).toFixed(2)}</td><td>${eff}</td>
+      <td><a class="sys" href="${href}" target="_blank" rel="noopener">Open</a></td>
+    </tr>`);
+  });
+}
+fillVault(MOCKS);
+
+function setStatus(msg, kind) {
+  const el = document.getElementById("sbStatus");
+  el.textContent = msg;
+  el.className = "status" + (kind ? " " + kind : "");
+}
+
+function applyStudent(payload, source) {
+  const student = payload.student || {};
+  const rows = payload.mocks || payload.tests || payload;
+  if (!Array.isArray(rows) || !rows.length) throw new Error("No mocks in payload");
+  MOCKS = rows.map(m => ({
+    id: m.id || m.mock_id,
+    date: m.date || m.taken_on,
+    diff: m.diff || m.difficulty || "M",
+    mins: +m.mins || +m.time_min || 0,
+    q: +m.q || +m.questions_total || 0,
+    att: +m.att || +m.attempted || 0,
+    c: +m.c || +m.correct || 0,
+    w: +m.w || +m.wrong || 0,
+    net: +m.net || +m.score || 0,
+    pct: +m.pct || +m.standing || 0,
+    acc: +m.acc || (m.attempted ? (m.correct / m.attempted * 100) : 0),
+    mpc: +m.mpc || ((+m.mins || +m.time_min || 0) / Math.max(1, +m.c || +m.correct || 1)),
+    sb_url: m.sb_url || m.report_url || sbMockUrl(m.id || m.mock_id)
+  }));
+  const name = student.name || payload.name || source;
+  const initials = name.split(/\s+/).map(p => p[0]).join("").slice(0,2).toUpperCase();
+  document.getElementById("studentName").textContent = name;
+  document.getElementById("avatar").textContent = initials || "SB";
+  document.getElementById("studentMeta").textContent =
+    (student.exam || student.paper || "Target exam") +
+    (student.days_out != null ? ` · ${student.days_out} days out` : "");
+  const profile = student.profile_url || `${SB_BASE.replace(/\/$/,"")}/student/${encodeURIComponent(student.id || source)}`;
+  document.getElementById("sbOpen").href = profile;
+  CURRENT_SB = student.id || source;
+  fillVault(MOCKS);
+  setStatus(`Connected · ${MOCKS.length} mocks from ${source}`, "ok");
+}
+
+function parseKey(raw) {
+  const v = (raw || "").trim();
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    const sid = u.searchParams.get("sb") || u.searchParams.get("sid") || u.searchParams.get("student");
+    if (sid) return { kind: "id", value: sid, href: v };
+    if (/\.json($|\?)/i.test(u.pathname)) return { kind: "json", value: v, href: v };
+    const parts = u.pathname.split("/").filter(Boolean);
+    const last = parts[parts.length - 1];
+    return { kind: last ? "id" : "json", value: last || v, href: v };
+  } catch {
+    return { kind: "id", value: v, href: `${SB_BASE.replace(/\/$/,"")}/student/${encodeURIComponent(v)}` };
+  }
+}
+
+async function loadFromSB(raw) {
+  const parsed = parseKey(raw);
+  if (!parsed) { setStatus("Paste a student id or SB link", "err"); return; }
+  setStatus("Loading from system…");
+  const endpoints = parsed.kind === "json"
+    ? [parsed.value]
+    : [
+        `${SB_BASE.replace(/\/$/,"")}/api/students/${encodeURIComponent(parsed.value)}/pulse.json`,
+        `${SB_BASE.replace(/\/$/,"")}/api/students/${encodeURIComponent(parsed.value)}`,
+        parsed.href
+      ];
+  let lastErr;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) { lastErr = res.status + " " + url; continue; }
+      const data = await res.json();
+      applyStudent(data, parsed.value);
+      const next = new URL(location.href);
+      next.searchParams.set("sb", parsed.value);
+      history.replaceState({}, "", next);
+      return;
+    } catch (e) { lastErr = e.message || String(e); }
+  }
+  setStatus("Could not reach SB (" + lastErr + "). Check sb_base or CORS. Demo still on.", "err");
+}
+
+document.getElementById("sbLoad").addEventListener("click", () => loadFromSB(document.getElementById("sbKey").value));
+document.getElementById("sbKey").addEventListener("keydown", e => { if (e.key === "Enter") loadFromSB(e.target.value); });
+document.getElementById("sbDemo").addEventListener("click", () => {
+  MOCKS = DEMO_MOCKS.slice();
+  fillVault(MOCKS);
+  document.getElementById("studentName").textContent = "Aarav Mehta";
+  document.getElementById("avatar").textContent = "AM";
+  document.getElementById("studentMeta").textContent = "Target exam · 71 days out";
+  document.getElementById("sbOpen").href = SB_BASE;
+  setStatus("Demo data");
+});
+document.getElementById("sbOpen").href = SB_BASE;
+
+try {
+  const boot = new URLSearchParams(location.search).get("sb")
+    || new URLSearchParams(location.search).get("sid");
+  if (boot) {
+    document.getElementById("sbKey").value = boot;
+    loadFromSB(boot);
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
