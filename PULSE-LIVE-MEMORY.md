@@ -1,63 +1,123 @@
-# Pulse — memory for making it live
+# Pulse — current dashboard and next data step
 
-Give this whole file to ChatGPT (or any builder) as the source of truth. Do not invent a new product. Wire this one to real student data.
+Updated 26 September 2026. Interface version 0.2.
 
-## What Pulse is
+## Product and scope
 
-Pulse is a student-facing mock analytics page for any MBA entrance exam. It is not a scorecard. It is a decision system: one bottleneck, time-costed marks, and a change the student can do before the next test.
+One student mock dashboard, with six fixed tabs: Summary, Progress, Benchmark, Strategy, Mistakes, Change. Keep the warm background, dark blue and orange design and Quant / Verbal / Logic section labels. Preserve provider-native section names in the future raw-data layer; exam-specific mapping still needs review.
 
-File to ship: `pulse.html` (single HTML page, Chart.js 4 from jsDelivr, no build step).
+The user asked to finish the dashboard first, then investigate TCY data. This version finalises the interface and safe rendering boundary only. No TCY, Supabase, AI import, authentication or entitlement integration is included.
 
-Brand: **Pulse**. Do not say CAT in the UI. Sections stay **Quant, Verbal, Logic** so the same page works for any exam.
+The original `PULSE-DASHBOARD-AUDIT.md` is a historical v0.1 audit; its update note describes fixes delivered by 0.2. The explicit feature list contains 84 named top-level slots, not 85. Summary slot 26 remains unspecified. Preserve every named location and nested requirement; do not invent a new tab or metric.
 
-## Look
+## Opening the page
 
-- Background `#f3f1ec`, cards `#fffcf7`, ink `#1a2332`.
-- **Dark blue** `#0b1f3a` — header, Quant, net score. Not the old lighter blue `#2a6f97` / `#1c3d5a`.
-- **Orange** `#e25b12` — buttons, positive deltas, Logic, adjusted-score line. Not the old green `#0f7a6c`.
-- Amber `#c47b17` only for warnings. Coral `#c44536` for down / wrong. Verbal `#6b4c9a`.
-- Fonts: IBM Plex Sans + IBM Plex Serif.
-- Mobile first. Charts about 132px tall under 640px. Tables 10px, extra columns hidden until 900px.
+- `pulse.html`: empty state; no account implied and no sample values visible.
+- `pulse.html?demo=1` or **View demo**: complete illustrative dashboard.
+- **Exit demo**: restores previously supplied student data, otherwise empty.
+- No network data requests are made. The old `?sb=`, `?sid=` and `?sb_base=` loader is removed.
+- Student ID and Load remain in Connection tools, disabled until a real authorised integration exists.
+- Chart.js 4.4.3 and fonts remain CDN dependencies. A readable data fallback replaces a chart if the chart library fails.
 
-## Six tabs (do not rename)
+## Rendering boundary
 
-| Tab | Question it answers |
+The next adapter calls `window.Pulse.setDashboard(viewModel)` after fetching, validating and calculating student data. Call `window.Pulse.clear()` on logout, failed load or student change before an asynchronous request. Do not retain the preceding student's results while loading another student.
+
+The renderer accepts a presentation view model, **not raw TCY JSON**. No raw-score calculations are implemented here. Do not connect arbitrary raw payloads directly or pass unreviewed AI prose as established facts.
+
+```js
+window.Pulse.setDashboard({
+  student: {
+    id: 'internal-student-id',
+    name: 'Student name',
+    exam: 'Exam name',
+    days_out: 71,
+    profile_url: 'https://approved.example/student/profile'
+  },
+  slots: {
+    'summary.net': { value: 0, note: 'Latest mock' },
+    'summary.accuracy': { value: '75%', note: '30 correct / 40 attempted' },
+    'summary.headline': 'A supported observation',
+    'summary.quant': {
+      accuracy: '75%', attempted: '12 / 20', minutes: '2.4 min',
+      trend: '+2.0', status: 'Hold', hint: 'A supported section-specific suggestion.'
+    },
+    'progress.log': [
+      ['M1', '2026-09-26', null, '120m', '40/66', '30 / 10', '75%', 80, null, 4, '0.67', null]
+    ]
+  },
+  charts: {
+    // Use the ten fixed canvas IDs below with trusted Chart.js configuration.
+    // Only provide datasets supported by the validated source data.
+  }
+});
+```
+
+All supplied values are presentation values. `null`, undefined and empty strings hide their locations; numeric zero is valid. Omitted cards/charts and unsupported narrative hide. Missing table cells remain blank so the schema and column alignment are preserved. Table links use `{label, url}` objects and permit HTTP(S) only. The integration must additionally restrict report/profile hosts to approved providers.
+
+Each render rebuilds the view from the template and clears all chart instances. Dynamic text uses safe DOM text assignment. The `student` object controls initials, name, exam/days and optional Open SB link. `Pulse.demo()` displays fixtures; `Pulse.mode` is `empty`, `demo` or `student`.
+
+## Slot keys and shapes
+
+`SLOT_DEFINITIONS` in `pulse.html` is the executable list of 61 dynamic binding groups. Static question lines, labels, navigation, two Summary jumps and connection chrome account for the remaining named locations. One grouped binding may contain several required nested fields.
+
+| Shape | Keys | Value |
+|---|---|---|
+| Text | summary.bottleneck, headline, explanation, predicted, latest, best, target, gap, hold, fix, take, stop | String or number; each key prefixed `summary.` |
+| KPI | summary.mocks, net, accuracy, attemptRate, minutesCorrect, consistency | `{value, note?}`; each key prefixed `summary.` |
+| Section card | summary.quant, summary.verbal, summary.logic | `{accuracy, attempted, minutes, trend, status, hint}` |
+| KPI | benchmark.target, predicted, marksGap, floors, lastFour, ready | `{value, note?}`; each key prefixed `benchmark.` |
+| KPI | strategy.timeQuestion, timeCorrect, timeWrong, skipTime, pacing, marksMinute | `{value, note?}`; each key prefixed `strategy.` |
+| KPI | mistakes.wrongs, slips, concept, timePressure, selection, streak | `{value, note?}`; each key prefixed `mistakes.` |
+| Text | benchmark.callout, strategy.callout | String |
+| Table | progress.log | 12 cells: Mock, Date, Diff, Time, Att, C/W, Acc, Net, Standing, Min/C, Eff, SB |
+| Table | benchmark.cockpit | Six metric rows, five cells: Metric, Quant, Verbal, Logic, Healthy |
+| Table | strategy.leaks | Seven cells: Mock, Section, Item, Time, Outcome, Leak, Rule |
+| Table | mistakes.repeats | Six cells: Pattern, Section, Type, Times, Last seen, Fix |
+| Copy | change.copy | `{headline, paragraph}` |
+| Table | change.load | Five rows, two cells: activity and load |
+| Table | change.criteria | Five rows, two cells: measure and change |
+| Table | change.marks | Five rows, three cells: move, expected change, effort |
+| List | change.rules, change.avoid | Five and four strings respectively |
+
+Do not pad unsupported plans or rows to match the fixture count. The full-data view supports every required row; the partial-data view must hide unsupported content.
+
+## Chart IDs
+
+| Canvas ID | Content |
 |---|---|
-| Summary | Where do I stand, right now? One bottleneck. |
-| Progress | Am I actually improving? |
-| Benchmark | How far am I from the target? A standard, not a peer rank. |
-| Strategy | Attempt more, or protect accuracy? |
-| Mistakes | Careless, or a concept gap? |
-| Change | What do I do differently in the next test? |
+| funnelChart | Available, attempted, correct, wrong, left |
+| trajChart | Net, adjusted score, standing |
+| accAttChart | Accuracy vs attempt rate |
+| decompChart | Five score movers |
+| benchChart | Six-spoke benchmark radar |
+| mpcChart | Three section minutes/correct vs band |
+| scatterChart | Time/accuracy bubble scatter |
+| balanceChart | Six spokes, three section shapes |
+| mistakeChart | Four mistake types |
+| diffChart | Easy/Medium/Hard accuracy for each section |
 
-## JSON the page already accepts
+Chart configurations belong under `viewModel.charts[canvasId]`. The ten chart-type slots do not use `slots`. Normalisation, source windows, labels and applicable bands must be established by the adapter/metric layer. Chart configs must be plain cloneable data, not executable callbacks. Avoid fixed demo axis ranges for real data. Omit unsupported series and use a legend for multi-series charts.
 
-`GET {sb_base}/api/students/{id}/pulse.json`
+## TCY investigation next
 
-Open with `pulse.html?sb=STUDENT_ID` or `?sb_base=https://sb.cetking.in`.
+1. Inspect an authorised real TCY result response server-side; document available fields, pagination and attempt identifiers. Do not assume question timing, difficulty or section detail exists.
+2. Establish an authenticated student-to-TCY identity mapping; enforce ownership on the server. Keep all TCY partner credentials server-side.
+3. Store canonical raw results with source, exam, marking rules, provider and date. Deduplicate attempts, preserve unknowns and valid zero.
+4. Compute supported fields, then map into the view model. TCY and future pasted-result imports must share the same canonical layer.
+5. Populate scores/history first. Add advanced analysis only when evidence supports it. Define entitlements before adding CETking-exclusive locks.
 
-Student fields: id, name, exam, days_out, target_standing, profile_url.
-Each mock: id, date, diff (E/M/H), mins, q, att, c, w, net, pct, acc, mpc, sb_url, sections.quant/verbal/logic {q, att, c, w, mins}.
-Optional questions[]: mock_id, section, item, topic, diff, seconds, outcome, tag (slip/concept/time/selection).
+## Metric guardrails
 
-Aliases: tests, mock_id, taken_on, difficulty, time_min, questions_total, attempted, correct, wrong, score, standing, report_url.
+- Accuracy = sum(correct)/sum(attempted); attempt rate = sum(attempted)/sum(available). Label the window and guard zero denominators.
+- Total minutes/correct differs from time spent on correct questions. Time/wrong and sunk-on-skips require item outcomes/timing.
+- Use reported score where available. Never default every exam to +3/−1. Use explicit rules and preserve raw vs scaled scores.
+- The previous Easy ×0.92 / Hard ×1.08 adjustment and generic healthy bands were prototype assumptions, not validated production formulas.
+- Standing predictions, marks-to-target, radar scaling, consistency grades, pacing, section floors and readiness need explicit methods before display.
+- Avoid counting attempts, accuracy, negatives and time savings as independent additive improvements.
+- Mistake tags need evidence or student confirmation; an easy wrong is not automatically a slip.
+- Demo recommendations and grades are illustrative only. Never reuse them as fallback student analysis.
 
-## Formulas
+## Validation delivered
 
-- Accuracy = correct / attempted. Never correct / total.
-- Attempt rate = attempted / total. Healthy band 70–80% with accuracy ≥ 75%.
-- Net = exam marking if sent, else 3*correct − 1*wrong.
-- Minutes per correct = minutes / correct.
-- Difficulty-adjusted net: easy ×0.92, medium ×1, hard ×1.08.
-- If a field is missing, hide the card. Do not invent a number.
-
-## Still demo (must be computed from JSON)
-
-Only the mock log and student name refill today. Summary, Progress, Benchmark, Strategy, Mistakes, and Change copy and charts are still sample numbers.
-
-## Do not
-
-- Do not add a seventh tab.
-- Do not rank the student against classmates.
-- Do not tell them to attempt more if accuracy is under 70%.
-- WordPress: iframe `pulse.html`. Do not paste it into a Custom HTML block.
+Six automated DOM regressions pass. Chromium desktop (1440px) and mobile (390px) checks passed across all six tabs with the pinned Chart.js package: ten chart instances, no page overflow, no JavaScript errors, clean exit to empty. CDN failure fallback also checked. No real TCY/student integration was tested.

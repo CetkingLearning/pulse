@@ -1,5 +1,7 @@
 # Pulse — dashboard readiness audit and implementation checklist
 
+> **Interface update — 26 September 2026, v0.2:** This is the original v0.1 audit, retained as a historical checklist. The page now has explicit demo/empty/student modes, 61 dynamic binding groups covering all named analytical locations, all ten chart render paths, safe text/links, complete table headers, mobile access to every column and keyboard tabs. Six DOM regressions and Chromium desktop/mobile checks pass. Raw TCY mapping, authentication/entitlements, metric definitions and calibrated advanced analysis remain pending. See `PULSE-LIVE-MEMORY.md` for the current contract. The old automatic endpoint loader has been removed until TCY integration is implemented.
+
 Date: 26 September 2026
 Repository: CetkingLearning/pulse
 Inspected: pulse.html (blob f6792cd311f9001264a55e6a09c80f1f35e152f0) and PULSE-LIVE-MEMORY.md on main.

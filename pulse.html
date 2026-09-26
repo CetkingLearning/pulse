@@ -1,14 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Pulse · Exam Analytics</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <style>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a"><title>Pulse · Your mock performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
     :root {
       --bg: #f3f1ec; --bg-2: #eae6dd; --ink: #1a2332; --ink-soft: #5b6577;
       --card: #fffcf7; --line: #e4ddd0; --navy: #0b1f3a; --teal: #e25b12;
@@ -89,7 +85,7 @@
     .pane .hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; }
     .chart-box { position: relative; height: 132px; }
     .chart-box.sm { height: 110px; }
-    .table-scroll, .pane:has(table.clean) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table.clean {
       width: 100%;
       min-width: 0;
@@ -103,15 +99,6 @@
     }
     table.clean td { padding: 4px 5px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
     table.clean tr:last-child td { border-bottom: 0; }
-    /* Drop secondary columns so the table fits a phone without a huge swipe. */
-    #vaultTable th:nth-child(2), #vaultTable td:nth-child(2),
-    #vaultTable th:nth-child(4), #vaultTable td:nth-child(4),
-    #vaultTable th:nth-child(9), #vaultTable td:nth-child(9),
-    #vaultTable th:nth-child(10), #vaultTable td:nth-child(10),
-    #vaultTable th:nth-child(11), #vaultTable td:nth-child(11),
-    #leakTable th:nth-child(1), #leakTable td:nth-child(1),
-    #leakTable th:nth-child(5), #leakTable td:nth-child(5),
-    #repeatTable th:nth-child(5), #repeatTable td:nth-child(5) { display: none; }
     .pill { display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 9px; font-weight: 600; }
     .easy { background: #fde6d4; color: #9a3d08; }
     .med { background: var(--amber-soft); color: #8a560c; }
@@ -179,98 +166,124 @@
       table.clean th { font-size: 11px; padding: 8px; }
       table.clean td { padding: 9px 8px; }
       .pill { font-size: 11px; padding: 2px 8px; }
-      #vaultTable th:nth-child(2), #vaultTable td:nth-child(2),
-      #vaultTable th:nth-child(4), #vaultTable td:nth-child(4),
-      #vaultTable th:nth-child(9), #vaultTable td:nth-child(9),
-      #vaultTable th:nth-child(10), #vaultTable td:nth-child(10),
-      #vaultTable th:nth-child(11), #vaultTable td:nth-child(11),
-      #leakTable th:nth-child(1), #leakTable td:nth-child(1),
-      #leakTable th:nth-child(5), #leakTable td:nth-child(5),
-      #repeatTable th:nth-child(5), #repeatTable td:nth-child(5) { display: table-cell; }
-      .table-scroll, .pane:has(table.clean) { margin: 0; padding: 0; overflow: visible; }
+      .table-scroll { margin: 0; padding: 0; overflow-x: auto; }
       .sb-bar { display: flex; padding: 8px 22px; }
       .sb-bar input { min-width: 240px; width: auto; }
       .sb-actions { display: contents; }
     }
-  </style>
-</head>
-<body>
-  <header class="app">
-    <div class="head-top">
-      <div class="brand">
-        <div class="mark">Pulse</div>
-        <div class="sub">Analytics</div>
-      </div>
-      <div class="student-chip">
-        <div class="avatar" id="avatar">AM</div>
-        <div>
-          <div style="font-weight:600" id="studentName">Aarav Mehta</div>
-          <div style="opacity:.7;font-size:11px" id="studentMeta">Target exam · 71 days out</div>
-        </div>
-      </div>
-    </div>
-    <nav class="tabs" id="pulseTabs">
-      <button class="active" type="button" data-tab="summary">Summary</button>
-      <button type="button" data-tab="progress">Progress</button>
-      <button type="button" data-tab="benchmark">Benchmark</button>
-      <button type="button" data-tab="strategy">Strategy</button>
-      <button type="button" data-tab="mistakes">Mistakes</button>
-      <button type="button" data-tab="change">Change</button>
-    </nav>
-  </header>
-  <div class="sb-bar">
-    <label>SB</label>
-    <input id="sbKey" placeholder="student id or sb link" />
-    <div class="sb-actions">
-      <button class="btn btn-teal" id="sbLoad" type="button">Load</button>
-      <button class="btn btn-ghost" id="sbDemo" type="button" style="background:#0b1f3a;color:#fff">Demo</button>
-      <span class="status" id="sbStatus">Not connected · sample</span>
-      <a class="sys" id="sbOpen" href="#" target="_blank" rel="noopener" style="color:#8ee0d2">Open SB →</a>
-    </div>
-  </div>
-
-  <div class="wrap">
-
-    <!-- 1 SUMMARY -->
-    <section id="summary" class="view active">
-      <p class="page-q">Where do I stand, right now?</p>
+  
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid #e25b12; outline-offset: 4px; }
+button:disabled, input:disabled { opacity: .55; cursor: not-allowed; }
+.skip-link { position: absolute; left: 16px; top: -60px; z-index: 50; padding: 12px; background: white; color: #0b1f3a; }
+.skip-link:focus { top: 8px; }
+.brand-dot { color: #ff8b47; }
+.brand .mark { font-size: 26px; }
+#studentName { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#studentMeta { opacity: .75; font-size: 11px; }
+.mode-bar { display: flex; align-items: center; gap: 12px; padding: 12px max(14px, calc((100% - 1236px) / 2)); background: #fffaf3; border-bottom: 1px solid var(--line); font-size: 12px; flex-wrap: wrap; }
+.mode-label { font-weight: 700; color: var(--navy); }
+.mode-description { color: var(--ink-soft); flex: 1; }
+.mode-bar .btn { padding: 9px 12px; }
+.demo-banner { background: #fde6d4; color: #763510; padding: 10px 16px; font-size: 12px; text-align: center; line-height: 1.5; }
+.connection-tools { max-width: 1236px; margin: 10px auto 0; padding: 0 14px; color: var(--ink-soft); font-size: 11px; }
+.connection-tools summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.connection-tools summary span { margin-left: 10px; color: #687182; }
+.connection-tools .sb-bar { border-radius: 10px; margin-top: 8px; }
+.page-title { font-family: "IBM Plex Serif", serif; font-size: 28px; font-weight: 500; margin: 0 0 6px; }
+.page-q { margin: 0 0 20px; line-height: 1.5; }
+.empty-state { padding: 46px 24px; text-align: center; max-width: 760px; margin: 24px auto; }
+.empty-mark { margin: 0 auto 20px; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; color: var(--teal); background: var(--teal-soft); font-family: "IBM Plex Serif", serif; font-size: 30px; }
+.empty-state h2 { font-family: "IBM Plex Serif", serif; font-size: 25px; font-weight: 500; margin-bottom: 10px; }
+.empty-state p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; max-width: 440px; margin: 0 auto 22px; }
+.empty-features { margin-top: 28px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.empty-features span { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); font-size: 11px; }
+.table-scroll { max-width: 100%; overflow-x: auto; border-radius: 6px; margin-top: 10px; }
+table.clean { min-width: max-content; font-size: 12px; }
+table.clean th { font-size: 10px; }
+table.clean th, table.clean td { padding: 10px 9px; }
+table.clean tbody tr:hover { background: #f4eee4; }
+.pane { min-width: 0; }
+.grid-2 > *, .grid-3 > *, .hero-row > * { min-width: 0; }
+.chart-box { height: 230px; }
+.chart-box.sm { height: 200px; }
+.chart-fallback { font-size: 12px; color: var(--ink-soft); padding: 12px; overflow: auto; height: 100%; }
+.chart-fallback p { margin: 6px 0; }
+.insight p, .hint, .swot-item span { overflow-wrap: anywhere; }
+.swot-item { font-size: 13px; line-height: 1.5; }
+.kpi .val { font-variant-numeric: tabular-nums; }
+.kpi .delta { color: var(--ink-soft); line-height: 1.4; }
+.app-footer { max-width: 1236px; margin: 0 auto; padding: 16px 14px 24px; display: flex; justify-content: space-between; gap: 12px; color: var(--ink-soft); font-size: 11px; border-top: 1px solid var(--line); }
+.no-script { padding: 20px; text-align: center; }
+@media (max-width: 639px) {
+ .brand .sub { display: none; }
+ .mode-description { flex-basis: 55%; }
+ .wrap { padding-bottom: 32px; }
+ .page-title { font-size: 24px; }
+ .empty-state { padding: 30px 18px; }
+ .empty-state h2 { font-size: 22px; }
+ .student-chip { max-width: 64%; }
+ .swot-item { grid-template-columns: 48px 1fr; }
+ .app-footer { flex-direction: column; }
+}
+@media (min-width: 900px) {
+ .chart-box { height: 270px; }
+ .chart-box.sm { height: 220px; }
+ header.app { justify-content: space-between; }
+ nav.tabs { flex: 0 1 auto; }
+ .head-top { flex: 1; max-width: 440px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media print { .connection-tools, .mode-bar, .tabs, .app-footer { display: none !important; } header.app { position: static; } .view.active { display: block; } }
+</style></head><body>
+<a class="skip-link" href="#dashboard">Skip to dashboard</a>
+<header class="app"><div class="head-top"><div class="brand"><div class="mark">Pulse<span class="brand-dot">.</span></div><div class="sub">Mock analytics</div></div><div class="student-chip" id="studentChip" hidden><div class="avatar" id="avatar"></div><div><div id="studentName"></div><div id="studentMeta"></div></div></div></div>
+<nav class="tabs" id="pulseTabs" role="tablist" aria-label="Pulse dashboard"><button id="tab-summary" role="tab" type="button" aria-controls="summary" aria-selected="false" tabindex="-1" data-tab="summary">Summary</button><button id="tab-progress" role="tab" type="button" aria-controls="progress" aria-selected="false" tabindex="-1" data-tab="progress">Progress</button><button id="tab-benchmark" role="tab" type="button" aria-controls="benchmark" aria-selected="false" tabindex="-1" data-tab="benchmark">Benchmark</button><button id="tab-strategy" role="tab" type="button" aria-controls="strategy" aria-selected="false" tabindex="-1" data-tab="strategy">Strategy</button><button id="tab-mistakes" role="tab" type="button" aria-controls="mistakes" aria-selected="false" tabindex="-1" data-tab="mistakes">Mistakes</button><button id="tab-change" role="tab" type="button" aria-controls="change" aria-selected="false" tabindex="-1" data-tab="change">Change</button></nav></header>
+<div class="mode-bar"><span class="mode-label" id="modeLabel">Your dashboard</span><span class="mode-description" id="modeDescription">Results will appear here once connected.</span><button class="btn btn-ghost" id="sbDemo" type="button">View demo</button><button class="btn btn-ghost" id="exitDemo" type="button" hidden>Exit demo</button></div>
+<div class="demo-banner" id="demoBanner" role="note" hidden><strong>Demo preview</strong> · Fictional student and illustrative analysis. These are not your results or validated predictions.</div>
+<details class="connection-tools"><summary>Connection tools <span>Not connected</span></summary><div class="sb-bar"><label for="sbKey">Student ID</label><input id="sbKey" placeholder="Available after data connection" disabled aria-describedby="sbStatus"><div class="sb-actions"><button class="btn btn-teal" id="sbLoad" type="button" disabled>Load</button><span class="status" id="sbStatus" role="status" aria-live="polite">TCY connection is the next step.</span><a class="sys" id="sbOpen" target="_blank" rel="noopener noreferrer" hidden>Open SB →</a></div></div></details>
+<main class="wrap" id="dashboard" tabindex="-1"></main><footer class="app-footer"><span>Pulse · Know what to change next.</span><span>Dashboard preview · 0.2</span></footer>
+<noscript><p class="no-script">Enable JavaScript to view Pulse.</p></noscript>
+<template id="dashboardTemplate"><!-- 1 SUMMARY -->
+    <section id="summary" class="view" role="tabpanel" aria-labelledby="tab-summary" tabindex="0">
+      <h1 class="page-title">Summary</h1><p class="page-q">Where do I stand, right now?</p>
       <div class="hero-row">
         <div class="card insight">
-          <div class="kicker">One bottleneck · last 8 mocks</div>
-          <h2>You are accurate enough to clear a high target. Verbal selection — not Quant — is the ceiling.</h2>
-          <p>
+          <div class="kicker" data-slot="summary.bottleneck">One bottleneck · last 8 mocks</div>
+          <h2 data-slot="summary.headline">You are accurate enough to clear a high target. Verbal selection — not Quant — is the ceiling.</h2>
+          <p data-slot="summary.explanation">
             Accuracy is 72% and rising. Time per correct answer dropped from 3.4 min to 2.6 min.
             The leak is Verbal: you attempt only 67% of questions and spend too long on items you still get wrong.
             Fixing selection in Verbal is worth more marks this month than grinding extra Quant.
           </p>
           <div class="actions">
-            <button class="btn btn-teal" data-tab-jump="change">What to change next test</button>
-            <button class="btn btn-ghost" data-tab-jump="strategy">Open strategy</button>
+            <button class="btn btn-teal" data-tab-jump="change" type="button">What to change next test</button>
+            <button class="btn btn-ghost" data-tab-jump="strategy" type="button">Open strategy</button>
           </div>
         </div>
         <div class="card target-card">
           <div class="label">Predicted standing</div>
-          <div class="pct">94.6<span> band</span></div>
+          <div class="pct" data-slot="summary.predicted">94.6<span> band</span></div>
           <div class="meta-row">
-            <span>Latest mock <b>91.8</b></span>
-            <span>Best <b>96.1</b></span>
-            <span>Target <b>99.0</b></span>
+            <span>Latest mock <b data-slot="summary.latest">91.8</b></span>
+            <span>Best <b data-slot="summary.best">96.1</b></span>
+            <span>Target <b data-slot="summary.target">99.0</b></span>
           </div>
-          <div class="callout">Gap to target ≈ +18–22 raw marks. Fastest path: +6 Verbal attempts at ≥75% accuracy, and cut time-on-wrong in Logic.</div>
+          <div class="callout" data-slot="summary.gap">Gap to target ≈ +18–22 raw marks. Fastest path: +6 Verbal attempts at ≥75% accuracy, and cut time-on-wrong in Logic.</div>
         </div>
       </div>
 
       <div class="kpis">
-        <div class="card kpi"><div class="name">Mocks taken</div><div class="val">12</div><div class="delta up">+3 this month</div></div>
-        <div class="card kpi"><div class="name">Net (latest)</div><div class="val">86</div><div class="delta up">+9 vs 4-mock avg</div></div>
-        <div class="card kpi"><div class="name">Accuracy</div><div class="val">72%</div><div class="delta up">+4.1 pp</div></div>
-        <div class="card kpi"><div class="name">Attempt rate</div><div class="val">74%</div><div class="delta down">Verbal 67%</div></div>
-        <div class="card kpi"><div class="name">Min / correct</div><div class="val">2.61</div><div class="delta up">−0.42 vs first 4</div></div>
-        <div class="card kpi"><div class="name">Consistency</div><div class="val">B+</div><div class="delta flat">σ = 7.4 marks</div></div>
+        <div class="card kpi" data-slot="summary.mocks"><div class="name">Mocks taken</div><div class="val">12</div><div class="delta up">+3 this month</div></div>
+        <div class="card kpi" data-slot="summary.net"><div class="name">Net (latest)</div><div class="val">86</div><div class="delta up">+9 vs 4-mock avg</div></div>
+        <div class="card kpi" data-slot="summary.accuracy"><div class="name">Accuracy</div><div class="val">72%</div><div class="delta up">+4.1 pp</div></div>
+        <div class="card kpi" data-slot="summary.attemptRate"><div class="name">Attempt rate</div><div class="val">74%</div><div class="delta down">Verbal 67%</div></div>
+        <div class="card kpi" data-slot="summary.minutesCorrect"><div class="name">Min / correct</div><div class="val">2.61</div><div class="delta up">−0.42 vs first 4</div></div>
+        <div class="card kpi" data-slot="summary.consistency"><div class="name">Consistency</div><div class="val">B+</div><div class="delta flat">σ = 7.4 marks</div></div>
       </div>
 
       <div class="grid-3">
-        <div class="card section-card" style="border-top: 3px solid var(--quant)">
+        <div class="card section-card" style="border-top: 3px solid var(--quant)" data-slot="summary.quant">
           <div class="top"><h4>Quant</h4><span class="big-acc">78%</span></div>
           <div class="mini-stats">
             <div><b>16 / 22</b>attempted</div>
@@ -280,7 +293,7 @@
           </div>
           <p class="hint">High accuracy, conservative attempts. You can add 2 easy items per mock.</p>
         </div>
-        <div class="card section-card" style="border-top: 3px solid var(--verbal)">
+        <div class="card section-card" style="border-top: 3px solid var(--verbal)" data-slot="summary.verbal">
           <div class="top"><h4>Verbal</h4><span class="big-acc">64%</span></div>
           <div class="mini-stats">
             <div><b>16 / 24</b>attempted</div>
@@ -290,7 +303,7 @@
           </div>
           <p class="hint">Primary bottleneck. Wrong answers cost too much time. Selection is the unlock.</p>
         </div>
-        <div class="card section-card" style="border-top: 3px solid var(--logic)">
+        <div class="card section-card" style="border-top: 3px solid var(--logic)" data-slot="summary.logic">
           <div class="top"><h4>Logic</h4><span class="big-acc">75%</span></div>
           <div class="mini-stats">
             <div><b>14 / 20</b>attempted</div>
@@ -304,84 +317,84 @@
 
       <div class="grid-2">
         <div class="card pane">
-          <h3>Where marks go · last 8 mocks (avg)</h3>
-          <p class="hint">Available → attempted → correct / wrong / left. Unattempted is not failure.</p>
-          <div class="chart-box sm"><canvas id="funnelChart"></canvas></div>
+          <h3>Where marks go · latest mock</h3>
+          <p class="hint">Use your mock history to decide what deserves attention next.</p>
+          <div class="chart-box sm"><canvas id="funnelChart" data-slot="summary.funnel" role="img" aria-label="Where marks go · latest mock"></canvas></div>
         </div>
         <div class="card pane">
           <h3>Live read</h3>
-          <p class="hint">From time × accuracy × difficulty — not from “highest section score.”</p>
+          <p class="hint">Use your mock history to decide what deserves attention next.</p>
           <div class="swot">
-            <div class="swot-item"><b class="S">Hold</b><span>Quant easy/medium — 91% accuracy at 1.8 min. Bank these first every mock.</span></div>
-            <div class="swot-item"><b class="W">Fix</b><span>Verbal inference — 48% accuracy, 3.6 min. You stay too long and still miss.</span></div>
-            <div class="swot-item"><b class="O">Take</b><span>Easy Logic sets you skip. 90-second take-or-leave rule.</span></div>
-            <div class="swot-item"><b class="T">Stop</b><span>Guessing in Verbal short questions. 37% of those attempts are wrong.</span></div>
+            <div class="swot-item"><b class="S">Hold</b><span data-slot="summary.hold">Quant easy/medium — 91% accuracy at 1.8 min. Bank these first every mock.</span></div>
+            <div class="swot-item"><b class="W">Fix</b><span data-slot="summary.fix">Verbal inference — 48% accuracy, 3.6 min. You stay too long and still miss.</span></div>
+            <div class="swot-item"><b class="O">Take</b><span data-slot="summary.take">Easy Logic sets you skip. 90-second take-or-leave rule.</span></div>
+            <div class="swot-item"><b class="T">Stop</b><span data-slot="summary.stop">Guessing in Verbal short questions. 37% of those attempts are wrong.</span></div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- 2 PROGRESS -->
-    <section id="progress" class="view">
-      <p class="page-q">Am I actually improving?</p>
+    <section id="progress" class="view" role="tabpanel" aria-labelledby="tab-progress" tabindex="0">
+      <h1 class="page-title">Progress</h1><p class="page-q">Am I actually improving?</p>
       <div class="card pane" style="margin-bottom:16px">
         <h3>Score across mocks</h3>
-        <p class="hint">Raw net vs difficulty-adjusted net. Use the adjusted line when an easy mock looks like a breakthrough.</p>
+        <p class="hint">Compare results from the same exam and mock provider.</p>
         <div class="legend">
           <span><i class="dot" style="background:#0b1f3a"></i>Net score</span>
           <span><i class="dot" style="background:#e25b12"></i>Adjusted score</span>
           <span><i class="dot" style="background:#c47b17"></i>Standing (right)</span>
         </div>
-        <div class="chart-box"><canvas id="trajChart"></canvas></div>
+        <div class="chart-box"><canvas id="trajChart" data-slot="progress.score" role="img" aria-label="Score across mocks"></canvas></div>
       </div>
       <div class="grid-2">
         <div class="card pane">
           <h3>Accuracy vs attempt rate</h3>
-          <p class="hint">Healthy pattern: attempt 70–80% with accuracy ≥75%. You are below the accuracy line in Verbal only.</p>
-          <div class="chart-box"><canvas id="accAttChart"></canvas></div>
+          <p class="hint">Compare results from the same exam and mock provider.</p>
+          <div class="chart-box"><canvas id="accAttChart" data-slot="progress.accuracy" role="img" aria-label="Accuracy vs attempt rate"></canvas></div>
         </div>
         <div class="card pane">
           <h3>What moved the score</h3>
-          <p class="hint">Marks gained vs your first four mocks — by lever, not by vibe.</p>
-          <div class="chart-box"><canvas id="decompChart"></canvas></div>
+          <p class="hint">Compare results from the same exam and mock provider.</p>
+          <div class="chart-box"><canvas id="decompChart" data-slot="progress.movers" role="img" aria-label="What moved the score"></canvas></div>
         </div>
       </div>
       <div class="card pane">
         <h3>Mock log</h3>
-        <p class="hint">Sort mentally by efficiency when score and difficulty disagree.</p>
-        <table class="clean" id="vaultTable">
+        <p class="hint">Compare results from the same exam and mock provider.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="progress.log table — scroll for all columns"><table class="clean" id="vaultTable" data-slot="progress.log">
           <thead>
             <tr>
-              <th>Mock</th><th>Date</th><th>Diff</th><th>Time</th><th>Att</th><th>C / W</th><th>Acc</th><th>Net</th><th>Standing</th><th>Min/C</th><th>Eff</th><th>SB</th>
+              <th scope="col">Mock</th><th scope="col">Date</th><th scope="col">Diff</th><th scope="col">Time</th><th scope="col">Att</th><th scope="col">C / W</th><th scope="col">Acc</th><th scope="col">Net</th><th scope="col">Standing</th><th scope="col">Min/C</th><th scope="col">Eff</th><th scope="col">SB</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
-      </div>
+      </div></div>
     </section>
 
     <!-- 3 BENCHMARK -->
-    <section id="benchmark" class="view">
-      <p class="page-q">How far am I from the target?</p>
+    <section id="benchmark" class="view" role="tabpanel" aria-labelledby="tab-benchmark" tabindex="0">
+      <h1 class="page-title">Benchmark</h1><p class="page-q">How far am I from the target?</p>
       <div class="kpis">
-        <div class="card kpi"><div class="name">Target standing</div><div class="val">99.0</div><div class="delta flat">you set this</div></div>
-        <div class="card kpi"><div class="name">Predicted</div><div class="val">94.6</div><div class="delta up">rising</div></div>
-        <div class="card kpi"><div class="name">Marks to close</div><div class="val">+20</div><div class="delta flat">raw, mid estimate</div></div>
-        <div class="card kpi"><div class="name">Section floors</div><div class="val">2 / 3</div><div class="delta down">Verbal short</div></div>
-        <div class="card kpi"><div class="name">Vs last 4 avg</div><div class="val">+9</div><div class="delta up">net marks</div></div>
-        <div class="card kpi"><div class="name">Ready signal</div><div class="val">Not yet</div><div class="delta flat">easy-mock bias</div></div>
+        <div class="card kpi" data-slot="benchmark.target"><div class="name">Target standing</div><div class="val">99.0</div><div class="delta flat">you set this</div></div>
+        <div class="card kpi" data-slot="benchmark.predicted"><div class="name">Predicted</div><div class="val">94.6</div><div class="delta up">rising</div></div>
+        <div class="card kpi" data-slot="benchmark.marksGap"><div class="name">Marks to close</div><div class="val">+20</div><div class="delta flat">raw, mid estimate</div></div>
+        <div class="card kpi" data-slot="benchmark.floors"><div class="name">Section floors</div><div class="val">2 / 3</div><div class="delta down">Verbal short</div></div>
+        <div class="card kpi" data-slot="benchmark.lastFour"><div class="name">Vs last 4 avg</div><div class="val">+9</div><div class="delta up">net marks</div></div>
+        <div class="card kpi" data-slot="benchmark.ready"><div class="name">Ready signal</div><div class="val">Not yet</div><div class="delta flat">easy-mock bias</div></div>
       </div>
       <div class="grid-2">
         <div class="card pane">
           <h3>You vs a healthy band</h3>
-          <p class="hint">A standard to reach — not a ranking against the room.</p>
-          <div class="chart-box"><canvas id="benchChart"></canvas></div>
+          <p class="hint">Benchmarks appear when a relevant target and comparison band are available.</p>
+          <div class="chart-box"><canvas id="benchChart" data-slot="benchmark.radar" role="img" aria-label="You vs a healthy band"></canvas></div>
         </div>
         <div class="card pane">
           <h3>Section cockpit vs band</h3>
-          <table class="clean">
+          <div class="table-scroll" tabindex="0" role="region" aria-label="benchmark.cockpit table — scroll for all columns"><table class="clean" data-slot="benchmark.cockpit">
             <thead>
-              <tr><th>Metric</th><th>Quant</th><th>Verbal</th><th>Logic</th><th>Healthy</th></tr>
+              <tr><th scope="col">Metric</th><th scope="col">Quant</th><th scope="col">Verbal</th><th scope="col">Logic</th><th scope="col">Healthy</th></tr>
             </thead>
             <tbody>
               <tr><td>Attempt rate</td><td>73%</td><td>67%</td><td>70%</td><td>70–80%</td></tr>
@@ -392,45 +405,45 @@
               <tr><td>Diff-adjusted acc</td><td>81%</td><td>61%</td><td>73%</td><td>—</td></tr>
             </tbody>
           </table>
-          <div class="callout">Verbal is the only section outside the healthy band on both attempt and accuracy. That is the gap, not “work harder everywhere.”</div>
+          </div><div class="callout" data-slot="benchmark.callout">Verbal is the only section outside the healthy band on both attempt and accuracy. That is the gap, not “work harder everywhere.”</div>
         </div>
       </div>
       <div class="card pane">
         <h3>Minutes per correct vs benchmark</h3>
-        <p class="hint">Your cost of one correct mark. Verbal is 29% more expensive than Quant.</p>
-        <div class="chart-box sm"><canvas id="mpcChart"></canvas></div>
+        <p class="hint">Benchmarks appear when a relevant target and comparison band are available.</p>
+        <div class="chart-box sm"><canvas id="mpcChart" data-slot="benchmark.minutes" role="img" aria-label="Minutes per correct vs benchmark"></canvas></div>
       </div>
     </section>
 
     <!-- 4 STRATEGY -->
-    <section id="strategy" class="view">
-      <p class="page-q">Attempt more, or protect accuracy?</p>
+    <section id="strategy" class="view" role="tabpanel" aria-labelledby="tab-strategy" tabindex="0">
+      <h1 class="page-title">Strategy</h1><p class="page-q">Attempt more, or protect accuracy?</p>
       <div class="kpis">
-        <div class="card kpi"><div class="name">Time / question</div><div class="val">1.82m</div><div class="delta flat">vs ideal 1.76m</div></div>
-        <div class="card kpi"><div class="name">Time / correct</div><div class="val">2.61m</div><div class="delta up">improving</div></div>
-        <div class="card kpi"><div class="name">Time / wrong</div><div class="val">2.05m</div><div class="delta down">still too high</div></div>
-        <div class="card kpi"><div class="name">Sunk on skips</div><div class="val">9.4m</div><div class="delta flat">per mock</div></div>
-        <div class="card kpi"><div class="name">Pacing</div><div class="val">71</div><div class="delta flat">/ 100</div></div>
-        <div class="card kpi"><div class="name">Marks / minute</div><div class="val">1.18</div><div class="delta up">efficiency</div></div>
+        <div class="card kpi" data-slot="strategy.timeQuestion"><div class="name">Time / question</div><div class="val">1.82m</div><div class="delta flat">vs ideal 1.76m</div></div>
+        <div class="card kpi" data-slot="strategy.timeCorrect"><div class="name">Time / correct</div><div class="val">2.61m</div><div class="delta up">improving</div></div>
+        <div class="card kpi" data-slot="strategy.timeWrong"><div class="name">Time / wrong</div><div class="val">2.05m</div><div class="delta down">still too high</div></div>
+        <div class="card kpi" data-slot="strategy.skipTime"><div class="name">Sunk on skips</div><div class="val">9.4m</div><div class="delta flat">per mock</div></div>
+        <div class="card kpi" data-slot="strategy.pacing"><div class="name">Pacing</div><div class="val">71</div><div class="delta flat">/ 100</div></div>
+        <div class="card kpi" data-slot="strategy.marksMinute"><div class="name">Marks / minute</div><div class="val">1.18</div><div class="delta up">efficiency</div></div>
       </div>
       <div class="grid-2">
         <div class="card pane">
           <h3>Time–accuracy map</h3>
-          <p class="hint">Each bubble is a mock. Size = difficulty. Upper-left is elite: fast and accurate.</p>
-          <div class="chart-box"><canvas id="scatterChart"></canvas></div>
+          <p class="hint">Timing detail helps separate speed, selection and accuracy.</p>
+          <div class="chart-box"><canvas id="scatterChart" data-slot="strategy.scatter" role="img" aria-label="Time–accuracy map"></canvas></div>
         </div>
         <div class="card pane">
           <h3>Section shape</h3>
-          <p class="hint">Accuracy, attempt, time, consistency, adjusted accuracy, selection.</p>
-          <div class="chart-box"><canvas id="balanceChart"></canvas></div>
+          <p class="hint">Timing detail helps separate speed, selection and accuracy.</p>
+          <div class="chart-box"><canvas id="balanceChart" data-slot="strategy.radar" role="img" aria-label="Section shape"></canvas></div>
         </div>
       </div>
       <div class="card pane">
         <h3>Time leak register · latest 3 mocks</h3>
-        <p class="hint">Minutes spent where marks did not come back.</p>
-        <table class="clean" id="leakTable">
-          </thead>
-          <tbody>
+        <p class="hint">Timing detail helps separate speed, selection and accuracy.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="strategy.leaks table — scroll for all columns"><table class="clean" id="leakTable" data-slot="strategy.leaks">
+          
+          <thead><tr><th scope="col">Mock</th><th scope="col">Section</th><th scope="col">Item</th><th scope="col">Time</th><th scope="col">Outcome</th><th scope="col">Leak</th><th scope="col">Rule</th></tr></thead><tbody>
             <tr><td>P12</td><td>Verbal</td><td>Passage 3</td><td>7.8 min</td><td>1C 1W</td><td>Stay-too-long</td><td>Hard cap 6 min / passage</td></tr>
             <tr><td>P12</td><td>Logic</td><td>Set B</td><td>8.1 min</td><td>Left</td><td>Bad selection</td><td>90s take / leave</td></tr>
             <tr><td>P11</td><td>Quant</td><td>Hard TITA</td><td>5.4 min</td><td>Wrong</td><td>Ego-solve</td><td>Leave at 3 min if no setup</td></tr>
@@ -438,39 +451,39 @@
             <tr><td>P10</td><td>Logic</td><td>Set C</td><td>6.6 min</td><td>2C 2W</td><td>Partial set</td><td>Finish a set or leave it</td></tr>
           </tbody>
         </table>
-        <div class="callout">Do not raise attempt rate if accuracy falls below 70%. Add attempts only in the section that is already accurate (Quant easy items).</div>
+        </div><div class="callout" data-slot="strategy.callout">Do not raise attempt rate if accuracy falls below 70%. Add attempts only in the section that is already accurate (Quant easy items).</div>
       </div>
     </section>
 
     <!-- 5 MISTAKES -->
-    <section id="mistakes" class="view">
-      <p class="page-q">Careless, or a concept gap?</p>
+    <section id="mistakes" class="view" role="tabpanel" aria-labelledby="tab-mistakes" tabindex="0">
+      <h1 class="page-title">Mistakes</h1><p class="page-q">Careless, or a concept gap?</p>
       <div class="kpis">
-        <div class="card kpi"><div class="name">Wrongs / mock</div><div class="val">14</div><div class="delta up">−2 vs first 4</div></div>
-        <div class="card kpi"><div class="name">Slips</div><div class="val">31%</div><div class="delta flat">read / calc</div></div>
-        <div class="card kpi"><div class="name">Concept</div><div class="val">27%</div><div class="delta down">inference</div></div>
-        <div class="card kpi"><div class="name">Time pressure</div><div class="val">22%</div><div class="delta flat">last 8 min</div></div>
-        <div class="card kpi"><div class="name">Bad selection</div><div class="val">20%</div><div class="delta down">Logic sets</div></div>
-        <div class="card kpi"><div class="name">Repeat streak</div><div class="val">5</div><div class="delta down">same RC error</div></div>
+        <div class="card kpi" data-slot="mistakes.wrongs"><div class="name">Wrongs / mock</div><div class="val">14</div><div class="delta up">−2 vs first 4</div></div>
+        <div class="card kpi" data-slot="mistakes.slips"><div class="name">Slips</div><div class="val">31%</div><div class="delta flat">read / calc</div></div>
+        <div class="card kpi" data-slot="mistakes.concept"><div class="name">Concept</div><div class="val">27%</div><div class="delta down">inference</div></div>
+        <div class="card kpi" data-slot="mistakes.timePressure"><div class="name">Time pressure</div><div class="val">22%</div><div class="delta flat">last 8 min</div></div>
+        <div class="card kpi" data-slot="mistakes.selection"><div class="name">Bad selection</div><div class="val">20%</div><div class="delta down">Logic sets</div></div>
+        <div class="card kpi" data-slot="mistakes.streak"><div class="name">Repeat streak</div><div class="val">5</div><div class="delta down">same RC error</div></div>
       </div>
       <div class="grid-2">
         <div class="card pane">
           <h3>Mistake mix · last 8 mocks</h3>
-          <p class="hint">Each type needs a different fix. Mixing them into “I am bad at Verbal” wastes a week.</p>
-          <div class="chart-box"><canvas id="mistakeChart"></canvas></div>
+          <p class="hint">Mistake types come from reviewed evidence, not from scores alone.</p>
+          <div class="chart-box"><canvas id="mistakeChart" data-slot="mistakes.mix" role="img" aria-label="Mistake mix · last 8 mocks"></canvas></div>
         </div>
         <div class="card pane">
           <h3>Accuracy by difficulty</h3>
-          <p class="hint">Easy items you miss are slips. Hard items you slowly get right are optional.</p>
-          <div class="chart-box"><canvas id="diffChart"></canvas></div>
+          <p class="hint">Mistake types come from reviewed evidence, not from scores alone.</p>
+          <div class="chart-box"><canvas id="diffChart" data-slot="mistakes.difficulty" role="img" aria-label="Accuracy by difficulty"></canvas></div>
         </div>
       </div>
       <div class="card pane">
         <h3>Repeat log</h3>
-        <p class="hint">Same miss, more than twice. This is the list Change should read.</p>
-        <table class="clean" id="repeatTable">
-          </thead>
-          <tbody>
+        <p class="hint">Mistake types come from reviewed evidence, not from scores alone.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="mistakes.repeats table — scroll for all columns"><table class="clean" id="repeatTable" data-slot="mistakes.repeats">
+          
+          <thead><tr><th scope="col">Pattern</th><th scope="col">Section</th><th scope="col">Type</th><th scope="col">Times</th><th scope="col">Last seen</th><th scope="col">Fix</th></tr></thead><tbody>
             <tr><td>Inference treated as fact</td><td>Verbal</td><td><span class="pill concept">Concept</span></td><td>5</td><td>P12</td><td>2 timed inference sets / week</td></tr>
             <tr><td>Misread “except” / “least”</td><td>Verbal</td><td><span class="pill slip">Slip</span></td><td>4</td><td>P11</td><td>Underline qualifier before options</td></tr>
             <tr><td>Open third Logic set</td><td>Logic</td><td><span class="pill select">Selection</span></td><td>4</td><td>P12</td><td>Two-set lock</td></tr>
@@ -478,21 +491,21 @@
             <tr><td>Rushed last 4 Quant</td><td>Quant</td><td><span class="pill timep">Time</span></td><td>3</td><td>P11</td><td>Leave 4 min buffer</td></tr>
           </tbody>
         </table>
-      </div>
+      </div></div>
     </section>
 
     <!-- 6 CHANGE -->
-    <section id="change" class="view">
-      <p class="page-q">What do I do differently in the next test?</p>
+    <section id="change" class="view" role="tabpanel" aria-labelledby="tab-change" tabindex="0">
+      <h1 class="page-title">Change</h1><p class="page-q">What do I do differently in the next test?</p>
       <div class="hero-row">
-        <div class="card insight">
+        <div class="card insight" data-slot="change.copy">
           <div class="kicker">Next test · generated 13 Sep 2026</div>
           <h2>Do not add more mocks until Verbal selection rules are drilled.</h2>
           <p>Two full mocks in 14 days is enough. The rest of the hours go to timed inference sets and Logic take-or-leave drills. More mocks without a new selection rule will reproduce the same 91–95 band.</p>
         </div>
         <div class="card pane">
           <h3>Load for 14 days</h3>
-          <table class="clean">
+          <div class="table-scroll" tabindex="0" role="region" aria-label="change.load table — scroll for all columns"><table class="clean" data-slot="change.load">
             <tbody>
               <tr><td>Full mocks</td><td>2</td></tr>
               <tr><td>Verbal timed sets</td><td>6 × 40 min</td></tr>
@@ -501,13 +514,13 @@
               <tr><td>Mistake log review</td><td>20 min after each session</td></tr>
             </tbody>
           </table>
-        </div>
+        </div></div>
       </div>
       <div class="grid-3" style="margin-top:16px">
         <div class="card pane">
           <h3>New rules</h3>
-          <p class="hint">Habits beat extra content this close to the exam.</p>
-          <ol style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+          <p class="hint">Actions and estimates appear when there is enough supporting evidence.</p>
+          <ol style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)" data-slot="change.rules">
             <li>Verbal: 6-minute hard cap per passage.</li>
             <li>Short Verbal: attempt only if two options die in 90 seconds.</li>
             <li>Logic: 90-second take-or-leave. Never a third open set.</li>
@@ -517,7 +530,7 @@
         </div>
         <div class="card pane">
           <h3>Success criteria by next mock</h3>
-          <table class="clean">
+          <div class="table-scroll" tabindex="0" role="region" aria-label="change.criteria table — scroll for all columns"><table class="clean" data-slot="change.criteria">
             <tbody>
               <tr><td>Verbal attempt rate</td><td>67% → 75%</td></tr>
               <tr><td>Verbal accuracy</td><td>64% → 72%</td></tr>
@@ -526,11 +539,11 @@
               <tr><td>Net score band</td><td>86 → 100–108</td></tr>
             </tbody>
           </table>
-        </div>
+        </div></div>
         <div class="card pane">
           <h3>Do not</h3>
-          <p class="hint">Common stall at this standing.</p>
-          <ul style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+          <p class="hint">Actions and estimates appear when there is enough supporting evidence.</p>
+          <ul style="padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink-soft)" data-slot="change.avoid">
             <li>Do not chase hard Quant to feel prepared.</li>
             <li>Do not take four mocks a week.</li>
             <li>Do not read solutions before tagging the mistake type.</li>
@@ -540,8 +553,8 @@
       </div>
       <div class="card pane" style="margin-top:16px">
         <h3>Marks you can buy next</h3>
-        <table class="clean">
-          <thead><tr><th>Move</th><th>Expected Δ</th><th>Effort</th></tr></thead>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="change.marks table — scroll for all columns"><table class="clean" data-slot="change.marks">
+          <thead><tr><th scope="col">Move</th><th scope="col">Expected Δ</th><th scope="col">Effort</th></tr></thead>
           <tbody>
             <tr><td>Verbal: +3 high-confidence passage attempts</td><td>+7 to +9</td><td>Med</td></tr>
             <tr><td>Stop two blind short-Verbal guesses</td><td>+2</td><td>Low</td></tr>
@@ -550,32 +563,13 @@
             <tr><td>Cap ego-solves at 3 min</td><td>+3</td><td>Habit</td></tr>
           </tbody>
         </table>
-      </div>
+      </div></div>
     </section>
-  </div>
-
+  </template>
 <script>
-function showTab(id) {
-  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
-  document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-}
-document.getElementById("pulseTabs").addEventListener("click", function (e) {
-  const btn = e.target.closest("button[data-tab]");
-  if (btn) showTab(btn.dataset.tab);
-});
-document.addEventListener("click", function (e) {
-  const jump = e.target.closest("[data-tab-jump]");
-  if (jump) showTab(jump.getAttribute("data-tab-jump"));
-});
-
-/* Point this at the live student-backend. Override anytime with ?sb_base= */
-let SB_BASE = "https://sb.cetking.in";
-try {
-  SB_BASE = new URLSearchParams(location.search).get("sb_base")
-    || localStorage.getItem("pulse_sb_base")
-    || SB_BASE;
-} catch (e) {}
-
+"use strict";
+const SLOT_DEFINITIONS = [{"key": "summary.bottleneck", "kind": "text"}, {"key": "summary.headline", "kind": "text"}, {"key": "summary.explanation", "kind": "text"}, {"key": "summary.predicted", "kind": "text"}, {"key": "summary.latest", "kind": "text"}, {"key": "summary.best", "kind": "text"}, {"key": "summary.target", "kind": "text"}, {"key": "summary.gap", "kind": "text"}, {"key": "summary.mocks", "kind": "kpi"}, {"key": "summary.net", "kind": "kpi"}, {"key": "summary.accuracy", "kind": "kpi"}, {"key": "summary.attemptRate", "kind": "kpi"}, {"key": "summary.minutesCorrect", "kind": "kpi"}, {"key": "summary.consistency", "kind": "kpi"}, {"key": "benchmark.target", "kind": "kpi"}, {"key": "benchmark.predicted", "kind": "kpi"}, {"key": "benchmark.marksGap", "kind": "kpi"}, {"key": "benchmark.floors", "kind": "kpi"}, {"key": "benchmark.lastFour", "kind": "kpi"}, {"key": "benchmark.ready", "kind": "kpi"}, {"key": "strategy.timeQuestion", "kind": "kpi"}, {"key": "strategy.timeCorrect", "kind": "kpi"}, {"key": "strategy.timeWrong", "kind": "kpi"}, {"key": "strategy.skipTime", "kind": "kpi"}, {"key": "strategy.pacing", "kind": "kpi"}, {"key": "strategy.marksMinute", "kind": "kpi"}, {"key": "mistakes.wrongs", "kind": "kpi"}, {"key": "mistakes.slips", "kind": "kpi"}, {"key": "mistakes.concept", "kind": "kpi"}, {"key": "mistakes.timePressure", "kind": "kpi"}, {"key": "mistakes.selection", "kind": "kpi"}, {"key": "mistakes.streak", "kind": "kpi"}, {"key": "summary.quant", "kind": "section"}, {"key": "summary.verbal", "kind": "section"}, {"key": "summary.logic", "kind": "section"}, {"key": "summary.hold", "kind": "text"}, {"key": "summary.fix", "kind": "text"}, {"key": "summary.take", "kind": "text"}, {"key": "summary.stop", "kind": "text"}, {"key": "benchmark.callout", "kind": "text"}, {"key": "strategy.callout", "kind": "text"}, {"key": "progress.log", "kind": "table"}, {"key": "benchmark.cockpit", "kind": "table"}, {"key": "strategy.leaks", "kind": "table"}, {"key": "mistakes.repeats", "kind": "table"}, {"key": "change.copy", "kind": "copy"}, {"key": "change.load", "kind": "table"}, {"key": "change.criteria", "kind": "table"}, {"key": "change.marks", "kind": "table"}, {"key": "change.rules", "kind": "list"}, {"key": "change.avoid", "kind": "list"}, {"key": "summary.funnel", "kind": "chart"}, {"key": "progress.score", "kind": "chart"}, {"key": "progress.accuracy", "kind": "chart"}, {"key": "progress.movers", "kind": "chart"}, {"key": "benchmark.radar", "kind": "chart"}, {"key": "benchmark.minutes", "kind": "chart"}, {"key": "strategy.scatter", "kind": "chart"}, {"key": "strategy.radar", "kind": "chart"}, {"key": "mistakes.mix", "kind": "chart"}, {"key": "mistakes.difficulty", "kind": "chart"}];
+const DEMO_SLOTS = {"summary.bottleneck": "One bottleneck \u00b7 illustrative analysis", "summary.headline": "Protect accuracy while improving Verbal selection.", "summary.explanation": "In the latest example mock, you attempted 49 of 66 questions and got 36 correct. That is 73.5% accuracy and 3.33 minutes per correct answer. Use the section and timing views to review where your next improvement could come from.", "summary.predicted": "94.6  band", "summary.latest": "91.8", "summary.best": "96.1", "summary.target": "99.0", "summary.gap": "Example scenario: +18\u201322 raw marks. Explore higher accuracy in Verbal and less time spent on wrong Logic answers.", "summary.mocks": {"value": "8", "note": "Example mock history"}, "summary.net": {"value": "95", "note": "+3.5 vs previous four"}, "summary.accuracy": {"value": "73.5%", "note": "36 correct / 49 attempted"}, "summary.attemptRate": {"value": "74.2%", "note": "49 attempted / 66 available"}, "summary.minutesCorrect": {"value": "3.33", "note": "120 minutes / 36 correct"}, "summary.consistency": {"value": "B+", "note": "\u03c3 = 7.4 marks"}, "benchmark.target": {"value": "99.0", "note": "you set this"}, "benchmark.predicted": {"value": "94.6", "note": "rising"}, "benchmark.marksGap": {"value": "+20", "note": "raw, mid estimate"}, "benchmark.floors": {"value": "2 / 3", "note": "Verbal short"}, "benchmark.lastFour": {"value": "+3.5", "note": "Latest vs previous four"}, "benchmark.ready": {"value": "Not yet", "note": "easy-mock bias"}, "strategy.timeQuestion": {"value": "1.82m", "note": "120 minutes / 66 available"}, "strategy.timeCorrect": {"value": "3.33m", "note": "Total minutes / correct"}, "strategy.timeWrong": {"value": "2.05m", "note": "still too high"}, "strategy.skipTime": {"value": "9.4m", "note": "per mock"}, "strategy.pacing": {"value": "71", "note": "/ 100"}, "strategy.marksMinute": {"value": "0.79", "note": "95 marks / 120 minutes"}, "mistakes.wrongs": {"value": "14", "note": "\u22122 vs first 4"}, "mistakes.slips": {"value": "31%", "note": "read / calc"}, "mistakes.concept": {"value": "27%", "note": "inference"}, "mistakes.timePressure": {"value": "22%", "note": "last 8 min"}, "mistakes.selection": {"value": "20%", "note": "Logic sets"}, "mistakes.streak": {"value": "5", "note": "same RC error"}, "summary.quant": {"accuracy": "81.3%", "attempted": "16 / 22", "minutes": "2.46 min", "trend": "+4.2", "status": "Hold", "hint": "Example: protect accuracy while reviewing easy items left unattempted."}, "summary.verbal": {"accuracy": "63.2%", "attempted": "19 / 24", "minutes": "4.00 min", "trend": "\u22121.1", "status": "Focus", "hint": "Example: review selection before increasing attempts."}, "summary.logic": {"accuracy": "78.6%", "attempted": "14 / 20", "minutes": "3.64 min", "trend": "+2.0", "status": "Watch", "hint": "Example: inspect time spent before abandoning a set."}, "summary.hold": "Quant easy/medium \u2014 91% accuracy at 1.8 min. Bank these first every mock.", "summary.fix": "Verbal inference \u2014 48% accuracy, 3.6 min. You stay too long and still miss.", "summary.take": "Easy Logic sets you skip. 90-second take-or-leave rule.", "summary.stop": "Guessing in Verbal short questions. 37% of those attempts are wrong.", "benchmark.callout": "Verbal is the only section outside the healthy band on both attempt and accuracy. That is the gap, not \u201cwork harder everywhere.\u201d", "strategy.callout": "Do not raise attempt rate if accuracy falls below 70%. Add attempts only in the section that is already accurate (Quant easy items).", "progress.log": [], "benchmark.cockpit": [["Attempt rate", "73%", "67%", "70%", "70\u201380%"], ["Accuracy", "78%", "64%", "75%", "\u226575%"], ["Net / mock (last 4)", "34", "22", "28", "\u2014"], ["Min / correct", "2.4", "3.1", "2.5", "\u22642.6"], ["Negatives / mock", "3.5", "5.8", "3.5", "\u22644"], ["Diff-adjusted acc", "81%", "61%", "73%", "\u2014"]], "strategy.leaks": [["P12", "Verbal", "Passage 3", "7.8 min", "1C 1W", "Stay-too-long", "Hard cap 6 min / passage"], ["P12", "Logic", "Set B", "8.1 min", "Left", "Bad selection", "90s take / leave"], ["P11", "Quant", "Hard TITA", "5.4 min", "Wrong", "Ego-solve", "Leave at 3 min if no setup"], ["P11", "Verbal", "Short Q", "4.2 min", "Wrong", "Low-yield", "2 min max; last in section"], ["P10", "Logic", "Set C", "6.6 min", "2C 2W", "Partial set", "Finish a set or leave it"]], "mistakes.repeats": [["Inference treated as fact", "Verbal", "Concept", "5", "P12", "2 timed inference sets / week"], ["Misread \u201cexcept\u201d / \u201cleast\u201d", "Verbal", "Slip", "4", "P11", "Underline qualifier before options"], ["Open third Logic set", "Logic", "Selection", "4", "P12", "Two-set lock"], ["Arithmetic sign error", "Quant", "Slip", "3", "P10", "5-second sign check"], ["Rushed last 4 Quant", "Quant", "Time", "3", "P11", "Leave 4 min buffer"]], "change.copy": {"headline": "Make selection the focus of your next two weeks.", "paragraph": "This example plan combines mock review, timed section practice and a short mistake log. The targets below illustrate how Pulse will turn a supported finding into an action you can check in your next mock."}, "change.load": [["Full mocks", "2"], ["Verbal timed sets", "6 \u00d7 40 min"], ["Logic take-or-leave", "4 \u00d7 30 min"], ["Quant easy-first sprints", "3 \u00d7 25 min"], ["Mistake log review", "20 min after each session"]], "change.criteria": [["Verbal attempt rate", "67% \u2192 75%"], ["Verbal accuracy", "64% \u2192 72%"], ["Time / wrong", "2.05 \u2192 1.6 min"], ["Sunk time on skips", "9.4 \u2192 5 min"], ["Net score band", "86 \u2192 100\u2013108"]], "change.marks": [["Verbal: +3 high-confidence passage attempts", "+7 to +9", "Med"], ["Stop two blind short-Verbal guesses", "+2", "Low"], ["Logic: abort bad sets by 90s", "+4 to +6", "Med"], ["Quant: add 2 easy items", "+5 to +6", "Low"], ["Cap ego-solves at 3 min", "+3", "Habit"]], "change.rules": ["Verbal: 6-minute hard cap per passage.", "Short Verbal: attempt only if two options die in 90 seconds.", "Logic: 90-second take-or-leave. Never a third open set.", "Quant: easy items first. Hard geometry after minute 25.", "Any unsolved item at 3 min \u2192 mark and leave."], "change.avoid": ["Do not chase hard Quant to feel prepared.", "Do not take four mocks a week.", "Do not read solutions before tagging the mistake type.", "Do not raise attempts if accuracy falls under 70%."]};
 const DEMO_MOCKS = [
   { id:"P05", date:"2026-06-08", diff:"E", mins:118, q:66, att:46, c:30, w:16, net:74, pct:86.2, mpc:3.93, acc:65.2 },
   { id:"P06", date:"2026-06-22", diff:"M", mins:120, q:66, att:48, c:32, w:16, net:80, pct:88.4, mpc:3.75, acc:66.7 },
@@ -587,9 +581,11 @@ const DEMO_MOCKS = [
   { id:"P12", date:"2026-09-10", diff:"M", mins:120, q:66, att:49, c:36, w:13, net:95, pct:91.8, mpc:3.33, acc:73.5 }
 ];
 
-let MOCKS = DEMO_MOCKS.slice();
-let CURRENT_SB = null;
 
+function demoChartSpecs() {
+const MOCKS = DEMO_MOCKS;
+const specs = {};
+function capture(id, spec) { specs[id] = spec; }
 const navy = "#0b1f3a", teal = "#e25b12", amber = "#c47b17", coral = "#c44536", quant="#0b1f3a", verbal="#6b4c9a", logic="#e25b12";
 
 const tickSize = window.matchMedia("(max-width: 899px)").matches ? 8 : 11;
@@ -606,13 +602,7 @@ function baseOpts() {
   };
 }
 
-function draw(id, spec) {
-  const el = document.getElementById(id);
-  if (!el || typeof Chart === "undefined") return;
-  try { new Chart(el, spec); } catch (e) {}
-}
-
-draw("funnelChart", {
+capture("funnelChart", {
   type: "bar",
   data: {
     labels: ["Available", "Attempted", "Correct", "Wrong", "Left"],
@@ -621,7 +611,7 @@ draw("funnelChart", {
   options: baseOpts()
 });
 
-draw("trajChart", {
+capture("trajChart", {
   type: "line",
   data: {
     labels: MOCKS.map(m => m.id),
@@ -642,7 +632,7 @@ draw("trajChart", {
   }
 });
 
-draw("accAttChart", {
+capture("accAttChart", {
   type: "line",
   data: {
     labels: MOCKS.map(m => m.id),
@@ -658,7 +648,7 @@ draw("accAttChart", {
   }
 });
 
-draw("decompChart", {
+capture("decompChart", {
   type: "bar",
   data: {
     labels: ["More attempts", "Higher accuracy", "Fewer negatives", "Better selection", "Time saved"],
@@ -667,7 +657,7 @@ draw("decompChart", {
   options: { ...baseOpts(), indexAxis: "y" }
 });
 
-draw("benchChart", {
+capture("benchChart", {
   type: "radar",
   data: {
     labels: ["Accuracy", "Attempt rate", "Time efficiency", "Consistency", "Diff-adj acc", "Selection"],
@@ -683,7 +673,7 @@ draw("benchChart", {
   }
 });
 
-draw("mpcChart", {
+capture("mpcChart", {
   type: "bar",
   data: {
     labels: ["Quant", "Verbal", "Logic"],
@@ -699,8 +689,8 @@ draw("mpcChart", {
   }
 });
 
-draw("scatterChart", {
-  type: "scatter",
+capture("scatterChart", {
+  type: "bubble",
   data: {
     datasets: [{
       label: "Mocks",
@@ -712,13 +702,13 @@ draw("scatterChart", {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: { title: { display: true, text: "Minutes per correct" }, min: 2.8, max: 4.2, grid:{color:"#eee8dc"} },
-      y: { title: { display: true, text: "Accuracy %" }, min: 62, max: 76, grid:{color:"#eee8dc"} }
+      x: { title: { display: true, text: "Minutes per correct" },  grid:{color:"#eee8dc"} },
+      y: { title: { display: true, text: "Accuracy %" },  grid:{color:"#eee8dc"} }
     }
   }
 });
 
-draw("balanceChart", {
+capture("balanceChart", {
   type: "radar",
   data: {
     labels: ["Accuracy", "Attempt rate", "Time efficiency", "Consistency", "Diff-adj acc", "Selection"],
@@ -735,7 +725,7 @@ draw("balanceChart", {
   }
 });
 
-draw("mistakeChart", {
+capture("mistakeChart", {
   type: "doughnut",
   data: {
     labels: ["Slip", "Concept", "Time pressure", "Bad selection"],
@@ -747,7 +737,7 @@ draw("mistakeChart", {
   }
 });
 
-draw("diffChart", {
+capture("diffChart", {
   type: "bar",
   data: {
     labels: ["Easy", "Medium", "Hard"],
@@ -764,136 +754,158 @@ draw("diffChart", {
   }
 });
 
-function sbMockUrl(id) {
-  return `${SB_BASE.replace(/\/$/,"")}/report/${encodeURIComponent(id)}`;
-}
 
-function fillVault(rows) {
-  const tb = document.querySelector("#vaultTable tbody");
-  tb.innerHTML = "";
-  rows.slice().reverse().forEach(m => {
-    const acc = Number(m.acc).toFixed(0);
-    const att = ((m.att/m.q)*100).toFixed(0);
-    const eff = (m.net / m.mins).toFixed(2);
-    const pill = m.diff==="E"?"easy":m.diff==="M"?"med":"hard";
-    const label = m.diff==="E"?"Easy":m.diff==="M"?"Med":"Hard";
-    const href = m.sb_url || sbMockUrl(m.id);
-    tb.insertAdjacentHTML("beforeend", `<tr>
-      <td><b>${m.id}</b></td><td>${m.date}</td>
-      <td><span class="pill ${pill}">${label}</span></td>
-      <td>${m.mins}m</td><td>${m.att}/${m.q} (${att}%)</td>
-      <td>${m.c} / ${m.w}</td><td>${acc}%</td>
-      <td><b>${m.net}</b></td><td>${m.pct}</td>
-      <td>${Number(m.mpc).toFixed(2)}</td><td>${eff}</td>
-      <td><a class="sys" href="${href}" target="_blank" rel="noopener">Open</a></td>
-    </tr>`);
-  });
+specs.funnelChart.data.datasets[0].data = [66,49,36,13,17];
+specs.trajChart.options.plugins.legend = {display:true,labels:{boxWidth:10,font:{size:11}}};
+specs.mpcChart.data.datasets[0].data = [2.46,4.00,3.64];
+return specs;
 }
-fillVault(MOCKS);
-
-function setStatus(msg, kind) {
-  const el = document.getElementById("sbStatus");
-  el.textContent = msg;
-  el.className = "status" + (kind ? " " + kind : "");
+const root = document.getElementById('dashboard');
+const tabs = ['summary','progress','benchmark','strategy','mistakes','change'];
+const chartInstances = new Map();
+let activeTab = 'summary';
+let currentMode = 'empty';
+let savedModel = null;
+const emptyCopy = {
+ summary: ['Your next improvement starts here.', 'Your mock results will bring this dashboard to life. Explore the demo to see the full Pulse experience.'],
+ progress: ['See progress across your mocks.', 'Score trends, accuracy and your mock history will appear once results are connected.'],
+ benchmark: ['Put your target in perspective.', 'A relevant target and enough supporting data will unlock this view.'],
+ strategy: ['Find where your time goes.', 'Section and question timings will help you review pace, selection and accuracy.'],
+ mistakes: ['Turn repeated mistakes into a plan.', 'Reviewed mistakes and question details will reveal patterns worth working on.'],
+ change: ['Know what to change next.', 'Your action plan will appear when your results provide enough evidence.']
+};
+function present(v) { return v !== null && v !== undefined && v !== '' && !(typeof v === 'number' && !Number.isFinite(v)); }
+function safeText(v) { return typeof v === 'string' || typeof v === 'number' ? String(v) : ''; }
+function safeURL(v) { try { const u = new URL(v); return ['https:','http:'].includes(u.protocol) ? u.href : null; } catch { return null; } }
+function clearCharts() { chartInstances.forEach(c => c.destroy()); chartInstances.clear(); }
+function showTab(id, focus = false) {
+ if (!tabs.includes(id)) return;
+ activeTab = id;
+ root.querySelectorAll('.view').forEach(v => { v.classList.toggle('active', v.id === id); v.hidden = v.id !== id; });
+ document.querySelectorAll('[role="tab"]').forEach(b => { const selected = b.dataset.tab === id; b.classList.toggle('active', selected); b.setAttribute('aria-selected', String(selected)); b.tabIndex = selected ? 0 : -1; if (focus && selected) b.focus(); });
+ requestAnimationFrame(() => chartInstances.forEach(chart => { if (chart.canvas.closest('.view')?.id === id) chart.resize(); }));
 }
-
-function applyStudent(payload, source) {
-  const student = payload.student || {};
-  const rows = payload.mocks || payload.tests || payload;
-  if (!Array.isArray(rows) || !rows.length) throw new Error("No mocks in payload");
-  MOCKS = rows.map(m => ({
-    id: m.id || m.mock_id,
-    date: m.date || m.taken_on,
-    diff: m.diff || m.difficulty || "M",
-    mins: +m.mins || +m.time_min || 0,
-    q: +m.q || +m.questions_total || 0,
-    att: +m.att || +m.attempted || 0,
-    c: +m.c || +m.correct || 0,
-    w: +m.w || +m.wrong || 0,
-    net: +m.net || +m.score || 0,
-    pct: +m.pct || +m.standing || 0,
-    acc: +m.acc || (m.attempted ? (m.correct / m.attempted * 100) : 0),
-    mpc: +m.mpc || ((+m.mins || +m.time_min || 0) / Math.max(1, +m.c || +m.correct || 1)),
-    sb_url: m.sb_url || m.report_url || sbMockUrl(m.id || m.mock_id)
-  }));
-  const name = student.name || payload.name || source;
-  const initials = name.split(/\s+/).map(p => p[0]).join("").slice(0,2).toUpperCase();
-  document.getElementById("studentName").textContent = name;
-  document.getElementById("avatar").textContent = initials || "SB";
-  document.getElementById("studentMeta").textContent =
-    (student.exam || student.paper || "Target exam") +
-    (student.days_out != null ? ` · ${student.days_out} days out` : "");
-  const profile = student.profile_url || `${SB_BASE.replace(/\/$/,"")}/student/${encodeURIComponent(student.id || source)}`;
-  document.getElementById("sbOpen").href = profile;
-  CURRENT_SB = student.id || source;
-  fillVault(MOCKS);
-  setStatus(`Connected · ${MOCKS.length} mocks from ${source}`, "ok");
+function makeEmpty(id) {
+ const pane = document.getElementById(id);
+ const box = document.createElement('div'); box.className = 'card empty-state';
+ const mark = document.createElement('div'); mark.className = 'empty-mark'; mark.textContent = 'P'; mark.setAttribute('aria-hidden','true');
+ const h = document.createElement('h2'); h.textContent = emptyCopy[id][0];
+ const p = document.createElement('p'); p.textContent = emptyCopy[id][1];
+ const button = document.createElement('button'); button.className = 'btn btn-teal'; button.type = 'button'; button.dataset.demo = ''; button.textContent = 'Explore the demo';
+ box.append(mark,h,p,button);
+ if (id === 'summary') { const tags = document.createElement('div'); tags.className='empty-features'; ['Understand your scores','Review your strategy','Plan your next move'].forEach(t=>{const span=document.createElement('span');span.textContent=t;tags.append(span);});box.append(tags); }
+ pane.append(box);
 }
-
-function parseKey(raw) {
-  const v = (raw || "").trim();
-  if (!v) return null;
-  try {
-    const u = new URL(v);
-    const sid = u.searchParams.get("sb") || u.searchParams.get("sid") || u.searchParams.get("student");
-    if (sid) return { kind: "id", value: sid, href: v };
-    if (/\.json($|\?)/i.test(u.pathname)) return { kind: "json", value: v, href: v };
-    const parts = u.pathname.split("/").filter(Boolean);
-    const last = parts[parts.length - 1];
-    return { kind: last ? "id" : "json", value: last || v, href: v };
-  } catch {
-    return { kind: "id", value: v, href: `${SB_BASE.replace(/\/$/,"")}/student/${encodeURIComponent(v)}` };
+function fillTable(table, rows) {
+ const body = table.querySelector('tbody') || table.createTBody(); body.replaceChildren();
+ if (!Array.isArray(rows)) return;
+ const columns = table.querySelectorAll('thead th').length || (table.dataset.slot === 'change.marks' ? 3 : 2);
+ rows.forEach(row => {
+  if (!Array.isArray(row)) return;
+  const tr = document.createElement('tr');
+  for (let i=0;i<columns;i++) {
+   const td=document.createElement('td');const value=row[i];
+   if (value && typeof value==='object' && safeURL(value.url)) { const a=document.createElement('a');a.className='sys';a.href=safeURL(value.url);a.textContent=safeText(value.label)||'Open';a.target='_blank';a.rel='noopener noreferrer';td.append(a); }
+   else if (present(value)) td.textContent=safeText(value);
+   tr.append(td);
   }
+  body.append(tr);
+ });
 }
-
-async function loadFromSB(raw) {
-  const parsed = parseKey(raw);
-  if (!parsed) { setStatus("Paste a student id or SB link", "err"); return; }
-  setStatus("Loading from system…");
-  const endpoints = parsed.kind === "json"
-    ? [parsed.value]
-    : [
-        `${SB_BASE.replace(/\/$/,"")}/api/students/${encodeURIComponent(parsed.value)}/pulse.json`,
-        `${SB_BASE.replace(/\/$/,"")}/api/students/${encodeURIComponent(parsed.value)}`,
-        parsed.href
-      ];
-  let lastErr;
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) { lastErr = res.status + " " + url; continue; }
-      const data = await res.json();
-      applyStudent(data, parsed.value);
-      const next = new URL(location.href);
-      next.searchParams.set("sb", parsed.value);
-      history.replaceState({}, "", next);
-      return;
-    } catch (e) { lastErr = e.message || String(e); }
-  }
-  setStatus("Could not reach SB (" + lastErr + "). Check sb_base or CORS. Demo still on.", "err");
+function fillSection(node,value) {
+ const fields=[['accuracy',node.querySelector('.big-acc')],...['attempted','minutes','trend','status'].map((k,i)=>[k,node.querySelectorAll('.mini-stats b')[i]]),['hint',node.querySelector('.hint')]];
+ fields.forEach(([key,el])=>{el.textContent=present(value[key])?safeText(value[key]):''; const target=el.matches('.mini-stats b')?el.parentElement:el;target.hidden=!present(value[key]);});
+ // The labels below status in the original demo contained unbound topic claims.
+ const statusCell=node.querySelectorAll('.mini-stats > div')[3];
+ [...statusCell.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).forEach(n=>n.textContent='status');
 }
-
-document.getElementById("sbLoad").addEventListener("click", () => loadFromSB(document.getElementById("sbKey").value));
-document.getElementById("sbKey").addEventListener("keydown", e => { if (e.key === "Enter") loadFromSB(e.target.value); });
-document.getElementById("sbDemo").addEventListener("click", () => {
-  MOCKS = DEMO_MOCKS.slice();
-  fillVault(MOCKS);
-  document.getElementById("studentName").textContent = "Aarav Mehta";
-  document.getElementById("avatar").textContent = "AM";
-  document.getElementById("studentMeta").textContent = "Target exam · 71 days out";
-  document.getElementById("sbOpen").href = SB_BASE;
-  setStatus("Demo data");
+function chartFallback(canvas,spec) {
+ const box=document.createElement('div');box.className='chart-fallback';box.dataset.slot=canvas.dataset.slot;box.setAttribute('role','img');box.setAttribute('aria-label',canvas.getAttribute('aria-label'));
+ const heading=document.createElement('strong');heading.textContent='Chart unavailable · data shown below';box.append(heading);
+ (spec.data?.datasets||[]).forEach(ds=>{const p=document.createElement('p');p.textContent=(ds.label?ds.label+': ':'')+(ds.data||[]).map((v,i)=>typeof v==='object'&&v!==null?`(${v.x}, ${v.y})`:`${spec.data.labels?.[i]||i+1}: ${v??'—'}`).join(' · ');box.append(p);});
+ canvas.replaceWith(box);
+}
+function drawChart(canvas,spec) {
+ if (!spec || !spec.data || !Array.isArray(spec.data.datasets)) return;
+ try { if (typeof Chart==='undefined') throw new Error('Chart unavailable');
+  spec.options=spec.options||{};spec.options.animation=false;
+  chartInstances.set(canvas.id,new Chart(canvas,spec));
+ } catch { chartFallback(canvas,spec); }
+}
+function updateIdentity(student,mode) {
+ const chip=document.getElementById('studentChip');chip.hidden=!present(student.name)&&!present(student.exam);
+ const name=safeText(student.name);document.getElementById('studentName').textContent=name;
+ const avatar=document.getElementById('avatar');avatar.textContent=name.split(/\s+/).filter(Boolean).map(p=>p[0]).join('').slice(0,2).toUpperCase();avatar.hidden=!name;
+ const days=typeof student.days_out==='number'&&Number.isFinite(student.days_out)&&student.days_out>=0?`${student.days_out} days out`:'';
+ document.getElementById('studentMeta').textContent=[safeText(student.exam),days].filter(Boolean).join(' · ');
+ const link=document.getElementById('sbOpen');const url=mode==='student'?safeURL(student.profile_url):null;link.hidden=!url;link.removeAttribute('href');if(url)link.href=url;
+ document.getElementById('sbKey').value=mode==='student'?safeText(student.id):'';
+}
+function render(model={},mode='student') {
+ clearCharts();currentMode=mode;
+ root.replaceChildren(document.getElementById('dashboardTemplate').content.cloneNode(true));
+ const values=model.slots&&typeof model.slots==='object'?model.slots:{};
+ const specs=model.charts&&typeof model.charts==='object'?model.charts:{};
+ root.querySelectorAll('.hint').forEach(el=>{el.hidden=true;});
+ root.querySelectorAll('.legend').forEach(el=>{el.hidden=true;});
+ root.querySelector('#change .kicker').textContent=mode==='demo'?'Illustrative 14-day plan':'Your next steps';
+ SLOT_DEFINITIONS.forEach(({key,kind})=>{
+  const node=root.querySelector(`[data-slot="${key}"]`);
+  const value=kind==='chart'?specs[node.id]:values[key];
+  let available=present(value);
+  if (['table','list'].includes(kind)) available=Array.isArray(value)&&value.length>0;
+  if(kind==='kpi')available=value&&present(value.value);
+  if(kind==='chart')available=value?.data?.datasets?.some(ds=>Array.isArray(ds.data)&&ds.data.some(present));
+  if(kind==='section')available=value&&['accuracy','attempted','minutes','trend','status','hint'].some(k=>present(value[k]));
+  if(kind==='copy')available=value&&(present(value.headline)||present(value.paragraph));
+  node.hidden=!available;
+  if(!available){node.textContent='';return;}
+  if(kind==='text')node.textContent=safeText(value);
+  if(kind==='kpi'){node.querySelector('.val').textContent=safeText(value.value);const note=node.querySelector('.delta');note.textContent=safeText(value.note);note.hidden=!present(value.note);}
+  if(kind==='section')fillSection(node,value);
+  if(kind==='table')fillTable(node,value);
+  if(kind==='list'){node.replaceChildren();value.forEach(v=>{if(present(v)){const li=document.createElement('li');li.textContent=safeText(v);node.append(li);}});}
+  if(kind==='copy'){['headline','paragraph'].forEach((k,i)=>{const el=node.querySelector(i?'p':'h2');el.textContent=safeText(value[k]);el.hidden=!present(value[k]);});}
+  if(kind==='chart')drawChart(node,value);
+ });
+ // Remove empty wrappers, labels and sample-only explanation text.
+ root.querySelectorAll('.meta-row > span').forEach(el=>el.hidden=el.querySelector('[data-slot]').hidden);
+ root.querySelector('.target-card > .label').hidden=root.querySelector('[data-slot="summary.predicted"]').hidden;
+ root.querySelectorAll('.swot-item').forEach(el=>el.hidden=el.querySelector('[data-slot]').hidden);
+ root.querySelectorAll('.card').forEach(el=>{
+  const supported=[...el.querySelectorAll('[data-slot]')].some(n=>!n.hidden)||(el.hasAttribute('data-slot')&&!el.hidden);
+  el.hidden=!supported;
+ });
+ root.querySelectorAll('.actions [data-tab-jump]').forEach(button=>{const target=root.querySelector('#'+button.dataset.tabJump);button.hidden=![...target.querySelectorAll('[data-slot]')].some(n=>!n.hidden);});
+ root.querySelectorAll('.hero-row,.grid-2,.grid-3,.kpis').forEach(el=>el.hidden=[...el.children].every(n=>n.hidden));
+ tabs.forEach(id=>{const pane=document.getElementById(id);if(![...pane.querySelectorAll('[data-slot]')].some(n=>!n.hidden))makeEmpty(id);});
+ updateIdentity(model.student||{},mode);
+ document.getElementById('demoBanner').hidden=mode!=='demo';
+ document.getElementById('sbDemo').hidden=mode==='demo';
+ document.getElementById('exitDemo').hidden=mode!=='demo';
+ document.getElementById('modeLabel').textContent=mode==='demo'?'Demo preview':'Your dashboard';
+ document.getElementById('modeDescription').textContent=mode==='demo'?'Explore all six views with example data.':mode==='student'?'Showing supplied results.':'Results will appear here once connected.';
+ document.getElementById('sbStatus').textContent=mode==='demo'?'Demo only · no student account connected.':mode==='student'?'Results supplied to dashboard · TCY sync not connected.':'TCY connection is the next step.';
+ showTab(activeTab);
+}
+function showDemo() {
+ const slots=structuredClone(DEMO_SLOTS);
+ slots['progress.log']=DEMO_MOCKS.slice().reverse().map(m=>[m.id,m.date,({E:'Easy',M:'Medium',H:'Hard'})[m.diff],`${m.mins}m`,`${m.att}/${m.q}`,`${m.c} / ${m.w}`,`${m.acc}%`,m.net,m.pct,m.mpc.toFixed(2),(m.net/m.mins).toFixed(2),null]);
+ render({student:{name:'Aarav Mehta',exam:'Example exam',days_out:71},slots,charts:demoChartSpecs()},'demo');
+}
+document.getElementById('pulseTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab);});
+document.getElementById('pulseTabs').addEventListener('keydown',e=>{
+ if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();let i=tabs.indexOf(activeTab);i=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;showTab(tabs[i],true);document.getElementById('tab-'+tabs[i]).scrollIntoView({block:'nearest',inline:'nearest'});
 });
-document.getElementById("sbOpen").href = SB_BASE;
-
-try {
-  const boot = new URLSearchParams(location.search).get("sb")
-    || new URLSearchParams(location.search).get("sid");
-  if (boot) {
-    document.getElementById("sbKey").value = boot;
-    loadFromSB(boot);
-  }
-} catch (e) {}
-</script>
-</body>
-</html>
+root.addEventListener('click',e=>{const jump=e.target.closest('[data-tab-jump]');if(jump){showTab(jump.dataset.tabJump);root.focus();}if(e.target.closest('[data-demo]'))showDemo();});
+document.getElementById('sbDemo').addEventListener('click',showDemo);
+document.getElementById('exitDemo').addEventListener('click',()=>{render(savedModel||{},savedModel?'student':'empty');document.getElementById('sbDemo').focus();});
+// Data adapter boundary for the next integration step. No credentials or API calls here.
+window.Pulse=Object.freeze({
+ setDashboard(viewModel){if(!viewModel||typeof viewModel!=='object'||Array.isArray(viewModel))throw new TypeError('Expected a Pulse view model');savedModel=structuredClone(viewModel);render(structuredClone(savedModel),'student');},
+ clear(){savedModel=null;render({},'empty');},
+ demo:showDemo,
+ get mode(){return currentMode;}
+});
+if(new URLSearchParams(location.search).get('demo')==='1')showDemo();else render({},'empty');
+</script></body></html>
