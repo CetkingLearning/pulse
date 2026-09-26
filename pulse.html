@@ -908,4 +908,50 @@ window.Pulse=Object.freeze({
  get mode(){return currentMode;}
 });
 if(new URLSearchParams(location.search).get('demo')==='1')showDemo();else render({},'empty');
-</script></body></html>
+</script><script>
+// Read-only file import. Partner credentials and student results never ship in this page.
+(()=>{
+const pct=(a,b)=>b?`${(100*a/b).toFixed(1)}%`:null;
+function convert(payload){
+ if(String(payload.success)!=='1'||!payload.data||Number(payload.data.total_pages)!==1)throw Error('Import a successful, complete single-page TCY result response.');
+ const d=payload.data, seen=new Set(), rows=[];
+ const number=(v)=>{if(v===null||v===undefined||String(v).trim()===''||!Number.isFinite(Number(v)))throw Error('Missing or invalid result number.');return Number(v);};
+ for(const [key,a] of Object.entries(d)){
+  if(!/^\d+$/.test(key)||!a||!/^CAT\s+Mock\s*-?\s*\d+$/i.test(a.test_name||''))continue;
+  const id=String(a.testtaken_id||'');if(!/^\d+$/.test(id)||!/^\d+$/.test(String(a.test_id||'')))throw Error('Missing attempt identifiers.');
+  if(seen.has(id))continue;seen.add(id);
+  const q=number(a.total_questions),c=number(a.total_correct),w=number(a.total_incorrect),att=number(a.total_attempts),left=number(a.total_unattempts),score=number(a.total_score);
+  if(![q,c,w,att,left].every(n=>Number.isInteger(n)&&n>=0)||q===0||c+w!==att||att+left!==q)throw Error('Result counts do not reconcile.');
+  const date=Date.parse(a.attempt_date);if(!Number.isFinite(date))throw Error('Invalid attempt date.');
+  rows.push({...a,q,c,w,att,left,score,date});
+ }
+ if(!rows.length)throw Error('No recognised full CAT mocks in this file. Sectional and topic tests are excluded.');
+ rows.sort((a,b)=>a.date-b.date);const last=rows.at(-1), first=rows[0];
+ const chart=(type,labels,datasets)=>({type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false}});
+ const slots={
+ 'summary.mocks':{value:rows.length,note:'Full CAT mocks in imported history'},
+ 'summary.net':{value:last.score,note:'Latest reported TCY score'},
+ 'summary.latest':last.score,'summary.best':Math.max(...rows.map(a=>a.score)),
+ 'summary.accuracy':{value:pct(last.c,last.att),note:`Latest: ${last.c} correct / ${last.att} attempted`},
+ 'summary.attemptRate':{value:pct(last.att,last.q),note:`Latest: ${last.att} / ${last.q} questions`},
+ 'summary.headline':rows.length>1?`Reported score: ${first.score} → ${last.score}`:'Your first imported full CAT mock',
+ 'summary.explanation':'Full CAT mocks only. Scores are reported by TCY; accuracy is calculated from correct and attempted counts. Difficulty, timing and percentile are unavailable in this API response.',
+ 'progress.log':rows.slice().reverse().map(a=>[a.test_name,a.attempt_date,null,null,`${a.att}/${a.q}`,`${a.c} / ${a.w}`,pct(a.c,a.att),a.score,null,null,null,{label:'TCY report',url:`https://ecetking.tcyonline.com/Analyse/testAnalysisNew-V2.php?testId=${a.test_id}&testTakenId=${a.testtaken_id}&WhichCategory=100000`}]),
+ 'mistakes.wrongs':{value:(rows.reduce((n,a)=>n+a.w,0)/rows.length).toFixed(1),note:'Average across imported full CAT mocks'}
+ };
+ const charts={funnelChart:chart('bar',['Available','Attempted','Correct','Wrong','Skipped'],[{label:'Latest full mock',data:[last.q,last.att,last.c,last.w,last.left],backgroundColor:['#223d58','#f39b48','#54a18c','#c65e5e','#a6b3be']}])};
+ if(rows.length>1){charts.trajChart=chart('line',rows.map(a=>a.test_name),[{label:'Reported net score',data:rows.map(a=>a.score),borderColor:'#e28c3d'}]);charts.accAttChart=chart('line',rows.map(a=>a.test_name),[{label:'Accuracy (%)',data:rows.map(a=>a.att?100*a.c/a.att:null),borderColor:'#338c81'},{label:'Attempt rate (%)',data:rows.map(a=>100*a.att/a.q),borderColor:'#e28c3d'}]);}
+ return {student:{name:d.student_detail?.student_name||'Imported student',exam:'CAT'},slots,charts};
+}
+window.PulseTCY=Object.freeze({convert});
+const box=document.createElement('div');box.className='sb-bar';
+const label=document.createElement('label');label.textContent='Import TCY result JSON';label.htmlFor='tcyImport';
+const input=document.createElement('input');input.id='tcyImport';input.type='file';input.accept='.json,application/json';
+const clear=document.createElement('button');clear.type='button';clear.className='btn';clear.textContent='Clear imported results';
+box.append(label,input,clear);document.querySelector('.connection-tools').append(box);
+let generation=0;
+clear.onclick=()=>{generation++;input.value='';window.Pulse.clear();};
+input.onchange=async()=>{const token=++generation;window.Pulse.clear();const file=input.files[0];if(!file)return;try{if(file.size>5000000)throw Error('File exceeds 5 MB.');const payload=JSON.parse(await file.text());if(token!==generation)return;window.Pulse.setDashboard(convert(payload));document.getElementById('sbStatus').textContent='TCY file imported locally · automatic sync not connected.';}catch(e){if(token===generation){window.Pulse.clear();document.getElementById('sbStatus').textContent=e.message;}}};
+})();
+</script>
+</body></html>

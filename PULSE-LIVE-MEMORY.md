@@ -138,3 +138,12 @@ The user requested that the earlier TCY Integration Memory conversation guide th
 - Keep all credentials and actual student identifiers outside this repository and client-side code.
 
 See PULSE-TCY-DATABASE-INSPECTION.md for the newer live schema findings and the exact limitations of the 26 September API check.
+
+
+## Verified CAT import — 26 September 2026
+
+Added a read-only local TCY JSON importer in Connection tools. It accepts a successful single-page get_student_scores response, recognises CAT Mock numbered titles, excludes sectionals/topics, deduplicates testtaken_id, validates counts and uses reported scores. Multi-page responses are rejected until an authenticated server-side pagination adapter exists. Import does not upload files or persist browser data.
+
+A real student's two full CAT mocks were checked privately, including exact attempt/test identifiers against the owner-supplied report. Six sectional attempts were excluded. Verified snapshot was delivered privately; no student identity, result payload, email, partner credentials or private snapshot is committed here. Available metrics: reported net, best, mock count, latest accuracy and attempt rate, average wrongs, full-mock log, funnel and score/accuracy/attempt trends. Percentile, section breakdown, timing, consistency grades, benchmarks and mistake classifications remain hidden. The website report contains richer fields that the API response did not supply.
+
+Eight DOM/adapter tests pass. No authenticated sync, database import, entitlement or hosted deployment was completed in this step. Earlier statements above that no raw adapter exists are superseded by this local importer only.
