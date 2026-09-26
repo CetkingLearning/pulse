@@ -121,3 +121,20 @@ Chart configurations belong under `viewModel.charts[canvasId]`. The ten chart-ty
 ## Validation delivered
 
 Six automated DOM regressions pass. Chromium desktop (1440px) and mobile (390px) checks passed across all six tabs with the pinned Chart.js package: ten chart instances, no page overflow, no JavaScript errors, clean exit to empty. CDN failure fallback also checked. No real TCY/student integration was tested.
+
+
+## Recovered TCY integration history — 26 September 2026
+
+The user requested that the earlier TCY Integration Memory conversation guide this work, supplying https://chatgpt.com/share/6ab7984f-11ac-83ee-946c-78c7b4fea5d1 . Direct retrieval of that link was unavailable. The following comes from retrieved prior conversation history (17 September), corroborated where noted by the existing feature-branch documentation inspected on 26 September; it is not a claim to have read the full shared page.
+
+- Earlier work reported successful live tests of get_courses, students_list, register, login/autologin, add_course and get_student_scores. Preserve that prior success; the latest HTTP 403 is a separate failed request, not evidence that TCY has no working API.
+- get_student_scores uses POST form fields and provides a paginated history of individual test-attempt summaries: scores, score percentages, correct/wrong/attempted/unattempted counts, test/category identifiers and dates. “Overall” means per-test aggregate data, not one combined score for the student.
+- The existing implementation is in CetkingLearning/cetking-platform on feature/tcy-integration. Prior history refers to draft PR #21; current PR status was not rechecked for this note. Reuse/reconcile the dedicated TCY client and identity resolver rather than starting them again.
+- Provisioning was staged with production OFF; the earlier tests do not mean the production purchase flow or score-sync worker was deployed. The latest database inspection found no TCY/Pulse tables in either connected project.
+- Resolve identity using an established mapping or reviewed students_list results. Duplicate email matches require review. Prior testing also reported that a tested encoded ID resolved to a different historical student than the supplied sample: verify returned identity before attaching any scores to a Person.
+- testtaken_id is the provider attempt identifier. Deduplicate within the provider/account scope.
+- No question/section result API was available in TCY's 17 September written reply, separately inspected during the database review. Do not infer timings, percentile, rank or question-level detail from summary counts.
+- Purchase provisioning, course mapping and autologin remain the dedicated TCY plugin's responsibilities. Pulse consumes authorised results.
+- Keep all credentials and actual student identifiers outside this repository and client-side code.
+
+See PULSE-TCY-DATABASE-INSPECTION.md for the newer live schema findings and the exact limitations of the 26 September API check.
