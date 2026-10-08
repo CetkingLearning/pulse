@@ -1,3 +1,14 @@
+# Pulse — student mock analysis
+
+> **Now live inside Cetking Universe (9 Oct 2026):** `/pulse` on https://cetking-platform.vercel.app —
+> repo `CetkingLearning/cetking-platform`, guide `cetking-one/docs/PULSE.md`.
+> Scores from any source (Universe mocks now; TCY and chat-paste later) land in Supabase `pulse_*` tables and
+> every number is computed in code. **This repo stays the design source** for `pulse.html`; copy design changes
+> into `cetking-one/public/pulse/pulse.html` in the Universe repo.
+>
+> Read order: `PULSE-LIVE-MEMORY.md` (current rules) → Universe `docs/PULSE.md` (how it runs).
+> `PULSE-DEV-MEMORY.md` is the original v0.1 plan and is partly superseded.
+
 # Pulse 0.2 — dashboard interface
 
 Student mock analytics in one page: `pulse.html`. No runtime build step.

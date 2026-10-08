@@ -1,3 +1,11 @@
+> **⚠️ Read this first (9 Oct 2026).** This file is the original **v0.1 plan** and is partly **superseded**.
+> Do **not** rebuild the `?sb=` / `sb_base` loader, the `3*correct - 1*wrong` marking, the Easy ×0.92 / Hard ×1.08
+> adjustment, predicted standing, healthy bands or “marks you can buy” from here — those were removed on purpose because they
+> would show students invented numbers. Current rules: [`PULSE-LIVE-MEMORY.md`](PULSE-LIVE-MEMORY.md).
+> **Pulse now lives inside Cetking Universe** at `/pulse` (repo `CetkingLearning/cetking-platform`, `cetking-one/docs/PULSE.md`):
+> Supabase `pulse_*` tables (any source, any exam), engine `lib/pulse/viewmodel.ts`, page `public/pulse/pulse.html`.
+> What stays valid below: the six questions, the look, the 84 named slots, the chart IDs and the “Do not” list.
+
 # Pulse — complete developer memory (0.1)
 
 Source of truth for a coder making Pulse live. Do not redesign. Do not add a tab. Fill every slot from real data, or hide the slot. Never leave a demo number on a live student.
